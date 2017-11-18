@@ -15,8 +15,11 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+#from webapp.admin import ExtendedAdminSite
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^', include('api.urls'))
+    #url(r'^admin/', ExtendedAdminSite.get_urls),
+    url(r'^api/', include('api.urls')),
+    url(r'^', include('webapp.urls'))
 ]

@@ -1,4 +1,6 @@
 */migrations/*
 *.pyc
 *.py~
+*.css~
+*.html~
 local_settings.py

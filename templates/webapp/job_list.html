@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Job List</title>
+    <meta charset="utf-8">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'webapp/css/bootstrap.min.css' %}">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Job List</h1>
+
+        <table class="table table-striped">
+            <thead class="thead-inverse">
+                <tr style="background-color: black; color: white;">
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td width="80%" colspan=4>&nbsp;</td>
+                    <td width="20%">
+                        <a href="create" class="btn btn-success btn-sm" role="button">
+                            <span class="glyphicon glyphicon-plus"></span> Register New Job
+                        </a>
+                    </td>
+                </tr>
+            {% for job in object_list %}
+                <tr>
+                    <td>{{ job.id }}</td>
+                    <td>{{ job.name }}</td>
+                    <td>{{ job.type }}</td>
+                {% if job.status == "unknown" %}
+                    <td style="color: red">{{ job.status }}</td>
+                {% else %}
+                    <td>{{ job.status }}</td>
+                {% endif %}
+                    <!--<td><button>Edit</button></td>-->
+                    <td>
+                        <a href="./jobs/{{ job.id }}/update" class="btn btn-primary btn-sm" role="button">
+                            <span class="glyphicon glyphicon-pencil"></span> Edit
+                        </a>
+                        <a href="./jobs/{{ job.id }}/delete" class="btn btn-danger btn-sm" role="button">
+                            <span class="glyphicon glyphicon-minus"></span> Delete
+                        </a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan=5>No jobs found.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        <table>
+
+        Date: {{ now|date }}
+    </div>
+</body>

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Job
+from webapp.models import Job
 
 class JobSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""

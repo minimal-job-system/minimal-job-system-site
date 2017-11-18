@@ -1,0 +1,14 @@
+{% if object == None %}
+    <h1>Create Job</h1>
+{% else %}
+    <h1>Update Job</h1>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-primary">
+        {% if object == None %} Create {% else %} Update {% endif %}
+    </button>
+</form>

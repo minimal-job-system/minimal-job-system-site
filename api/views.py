@@ -1,6 +1,7 @@
 from rest_framework import generics
 from .serializers import JobSerializer
-from .models import Job
+
+from webapp.models import Job
 
 class CreateView(generics.ListCreateAPIView):
     """This class defines the create behavior of our rest api."""
