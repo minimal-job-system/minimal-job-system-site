@@ -1,14 +1,298 @@
-{% if object == None %}
-    <h1>Create Job</h1>
-{% else %}
-    <h1>Update Job</h1>
-{% endif %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Job List</title>
+    <meta charset="utf-8">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'webapp/css/bootstrap.min.css' %}">
+    <script src="{% static 'webapp/js/jquery-3.2.1.slim.min.js' %}"></script>
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
+    <script src="{% static 'webapp/js/jquery.formset.js' %}"></script>
+    <script src="{% static 'webapp/js/dynamic-formset.js' %}"></script>
 
-    <button type="submit" class="btn btn-primary">
-        {% if object == None %} Create {% else %} Update {% endif %}
-    </button>
-</form>
+    <script>
+        $(document).ready(function(){
+            $('.formset_row').formset({
+                addText: 'add job parameter',
+                addCssClass: 'hidden',
+                deleteText: 'remove',
+                //deleteCssClass: 'visible',
+                deleteCssClass: 'hidden',
+                prefix: 'jobparameters_set'
+            });
+
+            $('[id^="id_"]').prop('readonly', true);
+            $('[id="id_name"]').prop('readonly', false);
+            $('[id*="value"]').prop('readonly', false);
+
+
+            $('select option').prop('disabled', true);
+            $('#id_job_templates option').prop('disabled', false);
+            $('#id_type option:selected').prop('disabled', false);
+
+            $('.table-horizontal tr td').find('select[name$=type] option:selected').prop('disabled', false);
+
+            if ($('.table-horizontal tbody tr:first td').find('input[name$=name]').val()) {
+                $('.table-horizontal').removeClass("hidden");
+                //$('button[type="submit"]').prop('disabled', false);
+            } else {
+                //$('button[type="submit"]').prop('disabled', true);
+            }
+        })
+    </script>
+
+    <script>
+        function apply_job_template(template_id) {
+            if (template_id == "") {
+                $('[id^="id_"]').not('[type="hidden"]').val("");
+
+                document.getElementById('id_fieldset').disabled = true;
+                //$('button[type="submit"]').prop('disabled', true);
+                return;
+            }
+
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "GET", "/api/jobtemplates/" + template_id, false );
+            xmlHttp.setRequestHeader("Content-type", "application/json");
+            xmlHttp.send( null );
+            job_template = JSON.parse(xmlHttp.responseText);
+            //alert(JSON.stringify(job_template, null, 4))
+
+            source_types = new Map();
+        {% for id, name in source_types %}
+            source_types.set({{ id }}, "{{ name }}");
+        {% endfor %}
+            //alert(source_types.get(job_template.type));
+
+            //$('[id^="id_"]').prop('readonly', true);
+            //$('[id="id_name"]').prop('readonly', false);
+            //$('[id^="id_"]').prop('disabled', true)
+
+            document.getElementById('id_namespace').value = job_template.namespace;
+            document.getElementById('id_name').value = job_template.name;
+            //document.getElementById('id_type').value = job_template.type;
+            $('#id_type').find('option[value!=' + job_template.type + ']').prop('disabled', true);
+            $('#id_type').find('option[value=' + job_template.type + ']').prop('disabled', false);
+            $('#id_type').find('option[value=' + job_template.type + ']').prop('selected', 'selected');
+            document.getElementById('id_status').value = "initialized";
+
+            //alert(job_template.parameter_declarations)
+
+            $('.table-horizontal tbody tr').not("tr:first").remove();
+
+            var prefix = 'parameters';
+            for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
+                param_decl = job_template.parameter_declarations[idx];
+                addForm(null, prefix);
+                var row = $('.table-horizontal tbody tr:last');
+                row.find('td input[name$=name]').val(param_decl.name);
+                //row.find('td input[name$=type]').val(param_decl.type)
+                row.find('td select[name$=type]').find('option[value!=' + param_decl.type + ']').prop('disabled', true);
+                row.find('td select[name$=type]').find('option[value=' + param_decl.type + ']').prop('disabled', false);
+                row.find('td select[name$=type]').find('option[value=' + param_decl.type + ']').prop('selected', 'selected');
+                row.find('td input[name$=-value]').val(param_decl.default);
+                //row.find('td input[name$=value]').prop('readonly', false);
+
+                /*
+                row.children().not(':last').children().each(function() {
+                    updateElementIndex(this, prefix, idx);
+                });
+                */
+                row.children().children().each(function() {
+                    updateElementIndex(this, prefix, idx);
+                });
+            }
+
+            $('.table-horizontal tbody tr:first').remove();
+            $('#id_' + prefix + '-TOTAL_FORMS').val(idx);
+
+            $('.table-horizontal').removeClass("hidden");
+
+            document.getElementById('id_fieldset').disabled = false;
+            //$('button[type="submit"]').prop('disabled', false);
+        }
+    </script> 
+</head>
+<body>
+
+    <div class="container">
+
+    {% if object == None %}
+        <h1>Create Job</h1>
+    {% else %}
+        <h1>Update Job</h1>
+    {% endif %}
+
+        <form class="form-horizontal" action="" method="post">
+
+
+
+
+        {% csrf_token %}
+
+
+
+        <div class="control-group">
+            <label class="control-label">Job Template</label> 
+            <div class="controls">
+                <!--<select id="id_job_templates" name="job_templates" onchange="this.form.submit()" size="1">-->
+                <select id="id_job_templates" name="job_templates"  onchange="apply_job_template(this.value)" size="1">
+                    <option value="" selected="selected">-- Please choose an existing template --</option>
+                {% for job_template in job_templates %}
+                    <option
+                        value="{{ job_template.id }}"
+                        {% if job_template.id|stringformat:"i" in selected_job_templates %}selected="selected"{% endif %}
+                    >{{ job_template.name }}</option>
+                    
+                {% endfor %}
+                </select>{{ selected_job_template }}
+                <!--<p class="help-inline"><small>help text</small></p>-->
+            </div>
+        </div>
+
+        
+
+        <!--
+
+            {% csrf_token %}
+
+            {{ job_templates.management_form }}
+
+            <table>
+                {% for form in job_templates %}
+                {{ form }}
+                {% endfor %}
+            </table>
+
+        -->
+
+        <hr />
+
+        <!--<form class="form-horizontal" action="" method="post">-->
+            <fieldset id="id_fieldset">
+                {% for field in form %}
+                    {% if field.errors %}
+                        <div class="input-group error">
+                            <label class="control-label">{{ field.label }}</label> 
+                            <div class="controls">
+                                {{ field }}
+                                <span class="help-inline">
+                                    {% for error in  field.errors %}{{ error }}{% endfor %}
+                                </span>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="input-group">
+                            <label class="control-label">{{ field.label }}</label> 
+                            <div class="controls">
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <p class="help-inline"><small>{{ field.help_text }}</small></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </fieldset>
+<!--
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" >Submit</button>
+            </div>
+        </form>
+
+        <form class="form-inline" method="post">
+-->
+
+            <hr />
+
+            <table class="table table-horizontal hidden">
+<!--
+                {% csrf_token %}
+
+                {{ form.as_p }}
+-->
+
+                {{ job_parameters.management_form }}
+
+                {% for form in job_parameters.forms %}
+
+                    {% if forloop.first %}
+                        <thead>
+                        <tr>
+                            {% for field in form.visible_fields %}
+                                <th>{{ field.label|capfirst }}</th>
+                            {% endfor %}
+                        </tr>
+                        </thead>
+                    {% endif %}
+                    <tr class="{% cycle 'row1' 'row2' %} formset_row">
+                        {% for field in form.visible_fields %}
+                            <td>
+                                {# Include the hidden fields in the form #}
+                                {% if forloop.first %}
+                                    {% for hidden in form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                {% endif %}
+                                {{ field.errors.as_ul }}
+                                {{ field }}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+
+            <hr />
+
+            <!--
+            <input type="submit" value="Save"/> <a href="{% url 'jobs_list' %}">back to the list</a>
+            -->
+
+            <!--
+            <div class="form-inline">
+                {% csrf_token %}
+                <fieldset id="id_fieldset_2" enabled>
+                    {{ job_parameters.management_form }}
+                    {% for form in job_parameters.forms  %}
+                        {% for field in form.visible_fields %}
+                            {% if field.errors %}
+                                <div class="control-group error">
+                                    <label class="control-label">{{ field.label }}</label> 
+                                    <div class="controls">
+                                        {{ field }}
+                                        <span class="help-inline">
+                                            {% for error in  field.errors %}{{ error }}{% endfor %}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="input-group">
+                                    <label class="control-label">{{ field.label }}</label> 
+                                    <div class="controls">
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <p class="help-inline"><small>{{ field.help_text }}</small></p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </fieldset>
+            </div>
+            -->
+
+            <hr />
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" >Submit</button>
+                <div style="display:inline-block; margin-left: 30px;">&nbsp;</div>
+                <a href="{% url 'jobs_list' %}">back to the list</a>
+            </div>
+
+        </form>
+
+    </div>
+
+</body>

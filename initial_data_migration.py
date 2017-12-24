@@ -2,7 +2,7 @@
 
 python3 manage.py makemigrations --name load_job_sources --empty webapp
 
-cat > ./webapp/migrations/0004_load_job_sources.py << EOL
+cat > ./webapp/migrations/0002_load_job_sources.py << EOL
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db import models, migrations
@@ -16,7 +16,7 @@ def load_job_sources(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('webapp', '0003_jobsource'),
+        ('webapp', '0001_initial'),
     ]
     operations = [
         migrations.RunPython(load_job_sources),

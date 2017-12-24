@@ -6,15 +6,17 @@
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
     {% load static %}
     <link rel="stylesheet" href="{% static 'webapp/css/bootstrap.min.css' %}">
+    <script src="{% static 'webapp/js/jquery-3.2.1.slim.min.js' %}"></script>
+    <script src="{% static 'webapp/js/bootstrap.min.js' %}"></script>
 </head>
 <body>
 
     <div class="container">
         <h1>Job List</h1>
-
         <table class="table table-striped">
             <thead class="thead-inverse">
                 <tr style="background-color: black; color: white;">
+                    <th>Creation Date</th>
                     <th>ID</th>
                     <th>Name</th>
                     <th>Type</th>
@@ -24,7 +26,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td width="80%" colspan=4>&nbsp;</td>
+                    <td width="80%" colspan=5>&nbsp;</td>
                     <td width="20%">
                         <a href="create" class="btn btn-success btn-sm" role="button">
                             <span class="glyphicon glyphicon-plus"></span> Register New Job
@@ -33,6 +35,7 @@
                 </tr>
             {% for job in object_list %}
                 <tr>
+                    <td>{{ job.date_created|date:'Y-m-d' }}</td>
                     <td>{{ job.id }}</td>
                     <td>{{ job.name }}</td>
                     <td>{{ job.type }}</td>
@@ -43,12 +46,38 @@
                 {% endif %}
                     <!--<td><button>Edit</button></td>-->
                     <td>
+                        <a href="#details_{{ job.id }}" data-toggle="collapse" class="btn btn-primary btn-sm" role="button">
+                            <span class="glyphicon glyphicon-info-sign"></span> Details
+                        </a>
+                    </td>
+                    <!--
+                    <td>
                         <a href="./jobs/{{ job.id }}/update" class="btn btn-primary btn-sm" role="button">
                             <span class="glyphicon glyphicon-pencil"></span> Edit
                         </a>
                         <a href="./jobs/{{ job.id }}/delete" class="btn btn-danger btn-sm" role="button">
                             <span class="glyphicon glyphicon-minus"></span> Delete
                         </a>
+                    </td>
+                    -->
+                </tr>
+                <tr><td colspan="6" style="padding: 0px;"/></tr>
+                <tr>
+                    <td style="padding: 0px;" />
+                    <td colspan="5" style="padding: 0px;">
+                        <div id="details_{{ job.id }}" class="collapse">
+                            <fieldset>
+                            <legend style="font-size: 14px; margin: 0px;">Parameters:</legend>
+                                {% for parameter in job.parameters.all %}
+                                    <table style="width: 300px;">
+                                        <tr>
+                                            <td style="width: 200px;">{{ parameter.name }}</td>
+                                            <td>{{ parameter.value }}</td>
+                                        </tr>
+                                    </table>
+                                {% endfor %}
+                            </fieldset>
+                        </div>
                     </td>
                 </tr>
             {% empty %}
