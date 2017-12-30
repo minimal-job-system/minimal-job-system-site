@@ -86,10 +86,12 @@ class SyncJobSourcesTool(Tool):
 
                 workflow_class_nodes = [
                     node for node in ast.walk(ast_node)
-                    if isinstance(node, ast.ClassDef) and "WrapperTask" in [
-                        base.attr for base in node.bases
-                    ]
+                    if isinstance(node, ast.ClassDef) and any("JobSystemWorkflow" in
+                        base.id for base in node.bases if isinstance(base, ast.Name)
+                    )
                 ]
+
+                parameter_types = JobParameterDeclaration._meta.get_field('type').flatchoices
 
                 for class_node in workflow_class_nodes:
                     #requires_func_node = [
@@ -97,51 +99,69 @@ class SyncJobSourcesTool(Tool):
                     #    if isinstance(node, ast.FunctionDef) and node.name == "requires"
                     #][0]
 
-                    parameter_types = JobParameterDeclaration._meta.get_field('type').flatchoices
+                    namespace = None
+                    parameters = []
+
+                    for child_node in ast.iter_child_nodes(class_node):
+                        # search for luigi.Parameter assignments
+                        # e.g. search_path = luigi.Parameter(default="")
+                        if isinstance(child_node, ast.Assign):
+                            assign_node = child_node
+                            if isinstance(assign_node.value, ast.Str):
+                                if assign_node.targets[0].id == "task_namespace":
+                                    namespace = assign_node.value.s
+                            if isinstance(assign_node.value, ast.Call):
+                                print(assign_node.value.__dict__)
+                                if assign_node.value.func.value.id == "luigi":
+                                    parameter = {
+                                        "name": None,
+                                        "type": None,
+                                        "default": None
+                                    }
+                                    parameter["name"] = assign_node.targets[0].id
+
+                                    search_type = None
+                                    if assign_node.value.func.attr == "IntParameter":
+                                        search_type = "Integer"
+                                    if assign_node.value.func.attr == "FloatParameter":
+                                        search_type = "Decimal"
+                                    if assign_node.value.func.attr == "BoolParameter":
+                                        search_type = "Boolean"
+                                    if assign_node.value.func.attr == "DateSecondParameter":
+                                        search_type = "Datetime"
+                                    if assign_node.value.func.attr == "Parameter":
+                                        search_type = "String"
+
+                                    parameter["type"] = next(
+                                        (k for k, v in parameter_types if v == search_type), None
+                                    )
+
+                                    for keyword_node in assign_node.value.keywords:
+                                        if keyword_node.arg == "default":
+                                            if isinstance(keyword_node.value, ast.NameConstant):
+                                                parameter["default"] = keyword_node.value.value
+                                            if isinstance(keyword_node.value, ast.Str):
+                                                parameter["default"] = keyword_node.value.s
+                                    parameters.append(parameter)
+
+                        # search for docstrings
+                        # Python does not treat strings defined IMMEDIATELY after a global definition as a docstring!
+                        # Sphinx, however, does - which is certainly not a bad practice
+                        if len(parameters) > 0 and isinstance(child_node, ast.Expr):
+                            expr_node = child_node
+                            if isinstance(expr_node.value, ast.Str):
+                                parameters[-1]["description"] = expr_node.value.s
+
+                    """
                     assign_nodes = [
                         node for node in ast.walk(class_node)
                         if isinstance(node, ast.Assign)
                     ]
-                    namespace = None
-                    parameters = []
-                    # search for luigi.Parameter assignments
-                    # e.g. search_path = luigi.Parameter(default="")
-                    for assign_node in assign_nodes:
-                        if isinstance(assign_node.value, ast.Str):
-                            if assign_node.targets[0].id == "task_namespace":
-                                namespace = assign_node.value.s
-                        if isinstance(assign_node.value, ast.Call):
-                            if assign_node.value.func.value.id == "luigi":
-                                parameter = {
-                                    "name": None,
-                                    "type": None,
-                                    "default": None
-                                }
-                                parameter["name"] = assign_node.targets[0].id
-
-                                search_type = None
-                                if assign_node.value.func.attr == "IntParameter":
-                                    search_type = "Integer"
-                                if assign_node.value.func.attr == "FloatParameter":
-                                    search_type = "Decimal"
-                                if assign_node.value.func.attr == "BoolParameter":
-                                    search_type = "Boolean"
-                                if assign_node.value.func.attr == "DateSecondParameter":
-                                    search_type = "Datetime"
-                                if assign_node.value.func.attr == "Parameter":
-                                    search_type = "String"
-
-                                parameter["type"] = next(
-                                    (k for k, v in parameter_types if v == search_type), None
-                                )
-
-                                for keyword_node in assign_node.value.keywords:
-                                    if keyword_node.arg == "default":
-                                        if isinstance(keyword_node.value, ast.NameConstant):
-                                            parameter["default"] = keyword_node.value.value
-                                        if isinstance(keyword_node.value, ast.Str):
-                                            parameter["default"] = keyword_node.value.s
-                                parameters.append(parameter)
+                    expr_nodes = [
+                        node for node in ast.walk(class_node)
+                        if isinstance(node, ast.Expr)
+                    ]
+                    """
 
                     job_template = JobTemplate(
                         namespace=namespace,
@@ -154,6 +174,7 @@ class SyncJobSourcesTool(Tool):
                         JobParameterDeclaration(
                             template=job_template,
                             name=parameter["name"],
+                            description=parameter["description"],
                             type=parameter["type"],
                             default=str(parameter["default"])
                         ).save()

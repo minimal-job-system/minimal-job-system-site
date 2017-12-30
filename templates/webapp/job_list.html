@@ -8,6 +8,32 @@
     <link rel="stylesheet" href="{% static 'webapp/css/bootstrap.min.css' %}">
     <script src="{% static 'webapp/js/jquery-3.2.1.slim.min.js' %}"></script>
     <script src="{% static 'webapp/js/bootstrap.min.js' %}"></script>
+
+    <script>
+        setInterval(function() {
+            var xmlHttp = new XMLHttpRequest();
+            //xmlHttp.open( "GET", "/api/jobs/?status=in progress", false );
+            xmlHttp.open( "GET", "/api/jobs", false );
+            xmlHttp.setRequestHeader("Content-type", "application/json");
+            xmlHttp.send( null );
+            jobs = JSON.parse(xmlHttp.responseText);
+            for (idx = 0; idx < jobs.length; ++idx) {
+                job = jobs[idx];
+                var job_status_row = $("tr#job_" + job['id'] + "_row td:nth-child(5)");
+                if (job['status'] == 'in progress') {
+                    var progress = $('<div>', {'class': 'progress'});
+                    var progress_bar = $('<div>', {'class':'progress-bar', 'role':'progressbar', 'aria-valuemin':'0', 'aria-valuemax':'100', 'style':'width: '+job['progress']+'%'});
+                    progress_bar.text(job['progress'] + '%');
+                    progress.html(progress_bar.get(0).outerHTML);
+                    //alert(JSON.stringify(progress, null, 4));
+                    job_status_row.html(progress.get(0).outerHTML);
+                }
+                else {
+                    job_status_row.html(job["status"]);
+                }
+            }
+        }, 2000);
+    </script>
 </head>
 <body>
 
@@ -34,7 +60,7 @@
                     </td>
                 </tr>
             {% for job in object_list %}
-                <tr>
+                <tr id="job_{{ job.id }}_row">
                     <td>{{ job.date_created|date:'Y-m-d' }}</td>
                     <td>{{ job.id }}</td>
                     <td>{{ job.name }}</td>
@@ -42,7 +68,17 @@
                 {% if job.status == "unknown" %}
                     <td style="color: red">{{ job.status }}</td>
                 {% else %}
-                    <td>{{ job.status }}</td>
+                    <td>
+                    {% if job.status != "in progress" %}
+                        {{ job.status }}
+                    {% else %}
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="width: {{ job.progress }}%">
+                                {{ job.progress }}%
+                            </div>
+                        </div>
+                    {% endif %}
+                    </td>
                 {% endif %}
                     <!--<td><button>Edit</button></td>-->
                     <td>
@@ -62,14 +98,14 @@
                     -->
                 </tr>
                 <tr><td colspan="6" style="padding: 0px;"/></tr>
-                <tr>
+                <tr id="job_{{ job.id }}_details_row">
                     <td style="padding: 0px;" />
                     <td colspan="5" style="padding: 0px;">
                         <div id="details_{{ job.id }}" class="collapse">
                             <fieldset>
                             <legend style="font-size: 14px; margin: 0px;">Parameters:</legend>
                                 {% for parameter in job.parameters.all %}
-                                    <table style="width: 300px;">
+                                    <table style="width: 100%;">
                                         <tr>
                                             <td style="width: 200px;">{{ parameter.name }}</td>
                                             <td>{{ parameter.value }}</td>
@@ -82,7 +118,7 @@
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan=5>No jobs found.</td>
+                    <td colspan=6>No jobs found.</td>
                 </tr>
             {% endfor %}
             </tbody>

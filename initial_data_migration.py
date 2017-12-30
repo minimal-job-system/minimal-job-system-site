@@ -11,7 +11,7 @@ def load_job_sources(apps, schema_editor):
     JobSource = apps.get_model("webapp", "JobSource")
     JobSource(
         id=0, name='Luigi Workflow Path [Primary]', type=0,
-        uri='/home/dvischi/Documents/Django/job-system-project/luigi_workflows/'
+        uri='/home/viscdari/Documents/Django/job-system-project/luigi_workflows/'
     ).save()
 
 class Migration(migrations.Migration):

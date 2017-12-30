@@ -7,6 +7,8 @@ from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.utils import timezone
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 from .models import JobSource, JobTemplate, Job, JobParameter
 from .forms import JobTemplateFormSet, JobParameterFormSet
 
@@ -43,7 +45,9 @@ class JobListView(ListView):
 class JobDetailView(DetailView):
     model = Job
 
-class JobCreateView(CreateView):
+
+class JobCreateView(LoginRequiredMixin, CreateView):
+    login_url = '/admin/login/'
     model = Job
     #form_class = JobForm
     success_url = reverse_lazy('jobs_list')

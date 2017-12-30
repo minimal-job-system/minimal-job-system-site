@@ -32,7 +32,7 @@ class JobTypeFilter(filters.FilterSet):
 
     class Meta:
         model = Job
-        fields = ['id', 'namespace', 'name', 'type_name', 'type', 'status']
+        fields = ['id', 'namespace', 'name', 'type_name', 'type', 'status', 'progress']
 
     def filter_type(self, queryset, name, value):
         return queryset.filter(

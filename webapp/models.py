@@ -1,4 +1,5 @@
 from django.contrib.postgres.fields import JSONField
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 JOB_TYPE_CHOICES = (
@@ -48,6 +49,7 @@ class JobParameterDeclaration(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255, blank=False)
+    description = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     default = models.CharField(max_length=255, blank=False)
 
@@ -62,6 +64,7 @@ class Job(models.Model):
     name = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=JOB_TYPE_CHOICES, blank=False)
     status = models.CharField(max_length=255, blank=False)
+    progress = models.IntegerField(blank=False, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
