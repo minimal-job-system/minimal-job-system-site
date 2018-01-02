@@ -15,10 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 #from webapp.admin import ExtendedAdminSite
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^login/', auth_views.login, {'template_name': 'core/login.html'}, name='login'),
+    url(r'^logout/', auth_views.logout, {'template_name': 'core/logout.html', 'next_page': '/login'}, name='logout'),
     #url(r'^admin/', ExtendedAdminSite.get_urls),
     url(r'^api/', include('api.urls')),
     url(r'^', include('webapp.urls'))

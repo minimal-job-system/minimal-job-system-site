@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Job List</title>
+    <title>Job Form</title>
     <meta charset="utf-8">
     <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
     {% load static %}
     <link rel="stylesheet" href="{% static 'webapp/css/bootstrap.min.css' %}">
     <script src="{% static 'webapp/js/jquery-3.2.1.slim.min.js' %}"></script>
+    <script src="{% static 'webapp/js/bootstrap.min.js' %}"></script>
 
     <script src="{% static 'webapp/js/jquery.formset.js' %}"></script>
     <script src="{% static 'webapp/js/dynamic-formset.js' %}"></script>
@@ -94,6 +95,8 @@
                 row.find('td input[name$=-value]').val(param_decl.default);
                 //row.find('td input[name$=value]').prop('readonly', false);
 
+                row.find('td span.icon_info').prop('title', param_decl.description);
+
                 /*
                 row.children().not(':last').children().each(function() {
                     updateElementIndex(this, prefix, idx);
@@ -111,6 +114,9 @@
 
             document.getElementById('id_fieldset').disabled = false;
             //$('button[type="submit"]').prop('disabled', false);
+
+            // activate tooltips
+            $(".icon_info").tooltip({placement: 'right'});
         }
     </script> 
 </head>
@@ -153,23 +159,8 @@
 
         
 
-        <!--
-
-            {% csrf_token %}
-
-            {{ job_templates.management_form }}
-
-            <table>
-                {% for form in job_templates %}
-                {{ form }}
-                {% endfor %}
-            </table>
-
-        -->
-
         <hr />
 
-        <!--<form class="form-horizontal" action="" method="post">-->
             <fieldset id="id_fieldset">
                 {% for field in form %}
                     {% if field.errors %}
@@ -195,38 +186,26 @@
                     {% endif %}
                 {% endfor %}
             </fieldset>
-<!--
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary" >Submit</button>
-            </div>
-        </form>
-
-        <form class="form-inline" method="post">
--->
 
             <hr />
 
             <table class="table table-horizontal hidden">
-<!--
-                {% csrf_token %}
-
-                {{ form.as_p }}
--->
 
                 {{ job_parameters.management_form }}
 
-                {% for form in job_parameters.forms %}
+                {% for form in job_parameters %}
 
                     {% if forloop.first %}
-                        <thead>
+                    <thead>
                         <tr>
                             {% for field in form.visible_fields %}
                                 <th>{{ field.label|capfirst }}</th>
                             {% endfor %}
                         </tr>
-                        </thead>
+                    </thead>
                     {% endif %}
-                    <tr class="{% cycle 'row1' 'row2' %} formset_row">
+                    <tbody>
+                        <tr class="{% cycle 'row1' 'row2' %} formset_row">
                         {% for field in form.visible_fields %}
                             <td>
                                 {# Include the hidden fields in the form #}
@@ -237,51 +216,15 @@
                                 {% endif %}
                                 {{ field.errors.as_ul }}
                                 {{ field }}
+                                {% if forloop.first %}
+                                    <span class="glyphicon glyphicon-info-sign icon_info" data-toggle="tooltip" title="No description available!" style="color: #337ab7;"/>
+                                {% endif %}
                             </td>
                         {% endfor %}
-                    </tr>
+                        </tr>
+                     </tbody>
                 {% endfor %}
             </table>
-
-            <hr />
-
-            <!--
-            <input type="submit" value="Save"/> <a href="{% url 'jobs_list' %}">back to the list</a>
-            -->
-
-            <!--
-            <div class="form-inline">
-                {% csrf_token %}
-                <fieldset id="id_fieldset_2" enabled>
-                    {{ job_parameters.management_form }}
-                    {% for form in job_parameters.forms  %}
-                        {% for field in form.visible_fields %}
-                            {% if field.errors %}
-                                <div class="control-group error">
-                                    <label class="control-label">{{ field.label }}</label> 
-                                    <div class="controls">
-                                        {{ field }}
-                                        <span class="help-inline">
-                                            {% for error in  field.errors %}{{ error }}{% endfor %}
-                                        </span>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="input-group">
-                                    <label class="control-label">{{ field.label }}</label> 
-                                    <div class="controls">
-                                        {{ field }}
-                                        {% if field.help_text %}
-                                            <p class="help-inline"><small>{{ field.help_text }}</small></p>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                </fieldset>
-            </div>
-            -->
 
             <hr />
 

@@ -51,6 +51,7 @@
                 </tr>
             </thead>
             <tbody>
+                {% if is_system_user %}
                 <tr>
                     <td width="80%" colspan=5>&nbsp;</td>
                     <td width="20%">
@@ -59,6 +60,7 @@
                         </a>
                     </td>
                 </tr>
+                {% endif %}
             {% for job in object_list %}
                 <tr id="job_{{ job.id }}_row">
                     <td>{{ job.date_created|date:'Y-m-d' }}</td>

@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.shortcuts import render
-from django.views.generic import DetailView
+from django.views.generic import TemplateView, DetailView
 from django.views.generic.list import ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.http import HttpResponse
@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from .models import JobSource, JobTemplate, Job, JobParameter
-from .forms import JobTemplateFormSet, JobParameterFormSet
+from .forms import JobTemplateForm, JobTemplateFormSet, JobParameterFormSet
 
 def index(request):
     return HttpResponse("<h1>Welcome to the Minimal Job System Web Application</h1>")
@@ -39,15 +39,42 @@ class JobListView(ListView):
             #media = qs.aggregate(a=JobParameter.objects.filter(job=job))
             #print(parameters )
         """
+        context['is_system_user'] = self.request.user.groups.filter(name='jobsys').exists()
         context['now'] = timezone.now()
         return context
 
 class JobDetailView(DetailView):
     model = Job
 
+"""
+class JobCreateView(LoginRequiredMixin, TemplateView):
+    login_url = '/admin/login/'
+    template_name = "webapp/job_form_2.html"
+    #success_url = reverse_lazy('jobs_list')
+
+    def get_context_data(self, **kwargs):
+        context = super(JobCreateView, self).get_context_data(**kwargs)
+        source_types = JobSource._meta.get_field('type').flatchoices
+        luigi_workflow_type = next(
+            (k for k, v in source_types if v == 'Luigi Workflow'), None
+        )
+        #context['job_templates'] = JobTemplateFormSet()
+        context['test_form'] = JobTemplateForm()
+        context['job_templates'] = JobTemplate.objects.all()
+        context['selected_job_templates'] = ['']
+        context['job_parameters'] = None
+        #if self.request.POST:
+        #    context['selected_job_templates'] = self.request.POST["job_templates"]
+        #    context['job_parameters'] = JobParameterFormSet(self.request.POST)
+        #else:
+        #    #context['job_parameters'] = JobParameterFormSet(instance=Job.objects.get(id=11), queryset=JobParameter.objects.filter(job=Job.objects.filter(id=11)))
+        #    context['job_parameters'] = JobParameterFormSet()
+
+        return context
+"""
+
 
 class JobCreateView(LoginRequiredMixin, CreateView):
-    login_url = '/admin/login/'
     model = Job
     #form_class = JobForm
     success_url = reverse_lazy('jobs_list')
