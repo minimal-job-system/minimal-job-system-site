@@ -17,23 +17,22 @@ class ToolModelAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context={}):
         extra_context['object_tools'] = self.tools
-        return super(ToolModelAdmin, self).changelist_view(request, extra_context=extra_context)
+        return super(ToolModelAdmin, self).changelist_view(
+            request, extra_context=extra_context
+        )
 
 
 sync_job_sources_tool = SyncJobSourcesTool()
 
-#admin.site.register(JobSource)
 
 @admin.register(JobSource)
 class JobSourceAdmin(admin.ModelAdmin):
-    actions = [sync_job_sources_tool.action,]
+    actions = [sync_job_sources_tool.action, ]
+
 
 @admin.register(JobTemplate)
 class JobTemplateAdmin(ToolModelAdmin):
-    tools = [sync_job_sources_tool,]
+    tools = [sync_job_sources_tool, ]
+
 
 admin.site.register(Job)
-
-
-
-

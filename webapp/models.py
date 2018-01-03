@@ -2,6 +2,7 @@ from django.contrib.postgres.fields import JSONField
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
+
 JOB_TYPE_CHOICES = (
     (0, 'Luigi Workflow'),
 )
@@ -12,6 +13,7 @@ PARAMETER_TYPE_CHOICES = (
     (3, 'Boolean'),
     (4, 'Datetime'),
 )
+
 
 class JobSource(models.Model):
     """This class represents the job source model."""
@@ -26,6 +28,7 @@ class JobSource(models.Model):
         """Return a human readable representation of the model instance."""
         return "Job Source: {}".format(self.name)
 
+
 class JobTemplate(models.Model):
     """This class represents the job model."""
     id = models.AutoField(primary_key=True)
@@ -39,6 +42,7 @@ class JobTemplate(models.Model):
     def __str__(self):
         """Return a human readable representation of the model instance."""
         return "Job Template: {}".format(self.name)
+
 
 class JobParameterDeclaration(models.Model):
     """This class represents a job parameter declaration."""
@@ -57,6 +61,7 @@ class JobParameterDeclaration(models.Model):
         """Return a human readable representation of the model instance."""
         return "Job Parameter Declaration: {}".format(self.name)
 
+
 class Job(models.Model):
     """This class represents the job model."""
     id = models.AutoField(primary_key=True)
@@ -64,13 +69,17 @@ class Job(models.Model):
     name = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=JOB_TYPE_CHOICES, blank=False)
     status = models.CharField(max_length=255, blank=False)
-    progress = models.IntegerField(blank=False, default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    progress = models.IntegerField(
+        blank=False, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         """Return a human readable representation of the model instance."""
         return "Job: {}".format(self.name)
+
 
 class JobParameter(models.Model):
     """This class represents a job parameter."""

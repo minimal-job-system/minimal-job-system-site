@@ -1,0 +1,318 @@
+{% extends 'webapp/base.html' %}
+
+{% block title %}
+    Register Job
+{% endblock title %}
+
+{% load static %}
+{% load datatype_extras %}
+{% load list_extras %}
+{% load dict_extras %}
+
+{% block head_js_section %}
+    <script>
+        $(document).ready(function() {
+            // activate tooltips
+            $(".icon-info").tooltip({placement: 'right'});
+        });
+
+        function update_tooltip(element) {
+            // not very elegant - but works also when the page is reloaded after the form validation failed
+            var template_id = $('select#id_job_templates').find(":selected").val();
+
+            // load job template
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "GET", "/api/jobtemplates/" + template_id, false );
+            xmlHttp.setRequestHeader("Content-type", "application/json");
+            xmlHttp.send( null );
+            job_template = JSON.parse(xmlHttp.responseText);
+
+            var fieldset = element.closest("fieldset");
+            switch (fieldset.attr('id')) {
+                case "id_job_fieldset":
+                    element.attr('data-original-title', job_template.description);
+                    break;
+                case "id_job_parameters_fieldset":
+                    idx = fieldset.find('.row').index(element.closest("div.row")) - 2;
+                    element.attr('data-original-title',  job_template.parameter_declarations[idx].description);
+                    break;
+                default:
+                    element.attr('data-original-title', 'Error: Could not load tool tip!');
+            }
+
+            element.tooltip({placement: 'right'});
+        }
+
+    </script>
+
+    <script>
+        function apply_job_template(template_id) {
+            if (template_id === "") {
+                return;
+            }
+
+            // load job template
+            var xmlHttp = new XMLHttpRequest();
+            xmlHttp.open( "GET", "/api/jobtemplates/" + template_id, false );
+            xmlHttp.setRequestHeader("Content-type", "application/json");
+            xmlHttp.send( null );
+            job_template = JSON.parse(xmlHttp.responseText);
+            /*alert(JSON.stringify(job_template, null, 4))*/
+
+            param_types = new Map();
+            {% for id, name in parameter_types %}
+                param_types.set({{ id }}, "{{ name }}");
+            {% endfor %}
+
+            // update job fieldset
+            var job_fieldset = $('fieldset#id_job_fieldset');
+
+            job_fieldset.find('#id_namespace').val(job_template.namespace);
+            job_fieldset.find('#id_name').val(job_template.name);
+            job_fieldset.find('#id_type').val(job_template.type);
+            job_fieldset.find('#id_status').val("initialized");
+            job_fieldset.find('#id_progress').val(0);
+            /*job_fieldset.find('.icon-info').prop('title', job_template.description);*/
+
+            job_fieldset.find('.row').not('.dummy').removeClass('hidden');
+            job_fieldset.find('.row.dummy').addClass('hidden');
+
+            // update job parameter fieldset
+            var job_params_fieldset = $('fieldset#id_job_parameters_fieldset');
+
+            job_params_fieldset.find('.row').not('.title').not('.template').not('dummy').remove();
+            job_params_fieldset.find('.row.title').removeClass('hidden');
+            job_params_fieldset.find('.row.dummy').addClass('hidden');
+
+            for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
+                param_decl = job_template.parameter_declarations[idx];
+
+                var job_params_fieldset_row_tpl = job_params_fieldset.find('.template').clone();
+                job_params_fieldset_row_tpl.removeClass('template');
+                job_params_fieldset_row_tpl.removeClass('hidden');
+                job_params_fieldset_row_tpl.find('input').each(function() {
+                    $(this).attr('id', $(this).attr('id').replace('__prefix__', idx));
+                    $(this).attr('name', $(this).attr('name').replace('__prefix__', idx));
+                });
+
+                job_params_fieldset_row_tpl.find('input[id$=name]').val(param_decl.name);
+                job_params_fieldset_row_tpl.find('input[id$=type]').val(param_decl.type);
+                job_params_fieldset_row_tpl.find('input[id$=type-str]').val(param_types.get(param_decl.type));
+                job_params_fieldset_row_tpl.find('input[id$=value]').val(param_decl.default);
+                /*job_params_fieldset_row_tpl.find('span.icon-info').prop('title', param_decl.description);*/
+
+                job_params_fieldset_row_tpl.appendTo(job_params_fieldset);
+            }
+
+            job_params_fieldset.find('#id_parameters-TOTAL_FORMS').val(idx);
+
+            // update form actions
+            $('.form-actions button').attr('disabled', false);
+
+            // activate tooltips
+            $(".icon-info").tooltip({placement: 'right'});
+
+        }
+    </script> 
+{% endblock head_js_section %}
+
+{% block content %}
+    <h1>Register Job</h1>
+
+        <form class="form" action="" method="post">
+
+        {% csrf_token %}
+
+
+
+    <legend>Job Template:</legend>
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="form-group">
+                <label class="control-label">Please choose a job template:</label> 
+                <div class="controls">
+                    <select id="id_job_templates" name="job_templates"  onchange="apply_job_template(this.value)" size="1">
+                        <option value="">---------</option>
+                    {% for job_template in job_templates %}
+                        <option
+                            value="{{ job_template.id }}"
+                            {% if job_template.id|stringformat:"i" in selected_job_templates %}selected="selected"{% endif %}
+                        >{{ job_template.name }}</option>
+                    {% endfor %}
+                    </select>{{ selected_job_template }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <fieldset id="id_job_fieldset">
+    <legend>Job Details:</legend>
+
+    {% for hidden in job_form.hidden_fields %}
+        {{ hidden }}
+    {% endfor %}
+
+    <div class="row {% if job_form.name.value == None %}hidden{% endif %}">
+        <div class="col-lg-2">
+            {% with job_form.namespace as field %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                <input id="id_{{ field.label|lower }}" name="{{ field.label|lower }}" value="{{ field.value }}" type="text" class="form-control required" readonly="true">
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-9">
+            {% with job_form.name as field %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+                <input id="id_{{ field.label|lower }}" name="{{ field.label|lower }}" value="{{ field.value }}" type="text" class="form-control required" readonly="true">
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-1">
+            <div class="form-group">
+                <label style="width: 100%;">&nbsp;</label>
+                <span class="glyphicon glyphicon-info-sign icon-info" data-toggle="tooltip" data-container="body" onmouseover="update_tooltip($(this))" style="color: #337ab7; padding: 6px 6px;"/>
+            </div>
+        </div>
+    </div>
+
+    <div class="row dummy {% if job_form.name.value != None %}hidden{% endif %}">
+        <div class="col-lg-12">
+            <div class="form-group">
+            No job found for the given template.</div>
+        </div>
+    </div>
+
+    </fieldset>
+
+
+<div class="row">
+<div class="col">
+        <hr />
+</div>
+</div>
+
+
+
+    <fieldset id="id_job_parameters_fieldset">
+    <legend>Job Parameters:</legend>
+
+    {{ job_parameter_form_set.management_form }}
+
+    
+
+    {% concat_list job_parameter_form_set.empty_form|to_list job_parameter_form_set.forms as job_param_forms %}
+    {% for job_param_form in job_param_forms %}
+
+    {% if forloop.first %}
+    <div class="row title {% if job_parameter_form_set.forms|length == 0 %}hidden{% endif %}">
+
+        {% for hidden in job_param_form.hidden_fields %}
+        <div class="col-lg-0 hidden">
+            <div class="form-group">
+                <label>{{ hidden.label }}</label>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="col-lg-3">
+            {% with job_param_form.name as field %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-2">
+            {% with job_param_form.type as field %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-6">
+            {% with job_param_form.value as field %}
+            <div class="form-group">
+                <label>{{ field.label }}</label>
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-1">
+            <div class="form-group">
+                <label>&nbsp;</label>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row {% if forloop.first %}template hidden{% endif %}">
+
+        {{ job_param_form.id }}
+
+        {% for hidden in job_param_form.hidden_fields %}
+        <div class="col-lg-0 hidden">
+            <div class="form-group {% if hidden.errors|length > 0 %}has-error{% endif %}">
+                <input id="id_{{ job_param_form.prefix }}-{{ hidden.label|lower }}" name="{{ job_param_form.prefix }}-{{ hidden.label|lower }}" value="{{ hidden.value|default:'' }}" type="hidden" class="form-control" readonly="true">
+                <span class="help-block">{% for error in hidden.errors %}{{ error }}{% endfor %}</span>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="col-lg-3">
+            {% with job_param_form.name as field %}
+            <div class="form-group {% if field.errors|length > 0 %}has-error{% endif %}">
+                <input id="id_{{ job_param_form.prefix }}-{{ field.label|lower }}" name="{{ job_param_form.prefix }}-{{ field.label|lower }}" value="{{ field.value }}" type="text" class="form-control required" readonly="true">
+                <span class="help-block">{% for error in field.errors %}{{ error }}{% endfor %}</span>
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-2">
+            {% with job_param_form.type as field %}
+            <div class="form-group {% if field.errors|length > 0 %}has-error{% endif %}">
+                {% with field.value|to_int as field_value %}
+                    <input id="id_{{ job_param_form.prefix }}-{{ field.label|lower }}-str" name="{{ job_param_form.prefix }}-{{ field.label|lower }}-str" value="{{ parameter_types|get_value:field_value }}" type="text" class="form-control required" readonly="true">
+                    <span class="help-block">{% for error in field.errors %}{{ error }}{% endfor %}</span>
+                {% endwith %}
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-6">
+            {% with job_param_form.value as field %}
+            <div class="form-group {% if field.errors|length > 0 %}has-error{% endif %}">
+                <input id="id_{{ job_param_form.prefix }}-{{ field.label|lower }}" name="{{ job_param_form.prefix }}-{{ field.label|lower }}" value="{{ field.value }}" type="text" class="form-control required">
+                <span class="help-block">{% for error in field.errors %}{{ error }}{% endfor %}</span>
+            </div>
+            {% endwith %}
+        </div>
+        <div class="col-lg-1">
+            <div class="form-group">
+                <span class="glyphicon glyphicon-info-sign icon-info" data-toggle="tooltip" data-container="body" onmouseover="update_tooltip($(this))" style="color: #337ab7; padding: 6px 6px;"/>
+            </div>
+        </div>
+    </div>
+
+   {% endfor %}
+
+    <div class="row dummy {% if job_parameter_form_set.forms|length > 0 %}hidden{% endif %}">
+        <div class="col-lg-12">
+            <div class="form-group">
+            No parameters found for the given template.</div>
+        </div>
+    </div>
+
+    </fieldset>
+
+<div class="row">
+<div class="col">
+        <hr />
+</div>
+</div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" {% if job_form.name.value == None %}disabled="true"{% endif %}>Submit</button>
+                <div style="display:inline-block; margin-left: 30px;">&nbsp;</div>
+                <a href="{% url 'jobs_list' %}">back to the list</a>
+            </div>
+
+        </form>
+{% endblock content %}
