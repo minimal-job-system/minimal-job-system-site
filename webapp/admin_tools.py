@@ -2,6 +2,7 @@ import abc
 import ast
 from glob import glob
 import six
+import sys
 
 from django.conf.urls import url
 from django.contrib import messages
@@ -192,8 +193,14 @@ def extract_parameter(assign_node, parameter_types):
 
     for keyword_node in assign_node.value.keywords:
         if keyword_node.arg == "default":
-            if isinstance(keyword_node.value, ast.NameConstant):
-                parameter["default"] = keyword_node.value.value
+            if sys.version_info.major == 2:
+                if isinstance(keyword_node.value, ast.Name):
+                    parameter["default"] = keyword_node.value.id
+            if sys.version_info.major == 3:
+                if  isinstance(keyword_node.value, ast.NameConstant):
+                    parameter["default"] = keyword_node.value.value
+
             if isinstance(keyword_node.value, ast.Str):
                 parameter["default"] = keyword_node.value.s
+
     return parameter

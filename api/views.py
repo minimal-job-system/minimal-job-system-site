@@ -33,11 +33,12 @@ class JobTypeFilter(filters.FilterSet):
         ]
 
     def filter_type(self, queryset, name, value):
+        type = [
+            choice_key for choice_key, choice_value in JOB_TYPE_CHOICES
+            if choice_value == value
+        ]
         return queryset.filter(
-            type=next(
-                filter(lambda choice: choice[1] == value, JOB_TYPE_CHOICES),
-                (-1, 'Unknown')
-            )[0]
+            type=type[0] if len(type) == 1 else -1
         )
 
 
