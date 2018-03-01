@@ -69,10 +69,11 @@ class Job(models.Model):
     name = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=JOB_TYPE_CHOICES, blank=False)
     status = models.CharField(max_length=255, blank=False)
-    progress = models.IntegerField(
+    progress = models.FloatField(
         blank=False, default=0,
         validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
+    owner = models.CharField(max_length=255, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_modified = models.DateTimeField(auto_now=True)
 

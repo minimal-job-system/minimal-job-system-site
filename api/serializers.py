@@ -43,7 +43,7 @@ class JobSerializer(serializers.ModelSerializer):
         """Meta class to map serializer's fields with the model fields."""
         model = Job
         fields = (
-            'id', 'namespace', 'name', 'type', 'status', 'progress',
+            'id', 'namespace', 'name', 'type', 'status', 'progress', 'owner',
             'date_created', 'date_modified', 'parameters'
         )
         read_only_fields = ('date_created', 'date_modified')

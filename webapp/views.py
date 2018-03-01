@@ -8,6 +8,10 @@ from django.urls import reverse_lazy
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from django_filters.views import FilterView
+
+from datetime import datetime, timedelta
+
 from .models import JobTemplate, Job, JobParameter
 from .forms import JobForm, JobParameterFormSet
 
@@ -18,9 +22,12 @@ def index(request):
     )
 
 
-class JobListView(ListView):
+class JobListView(FilterView):
     model = Job
-    ordering = ["date_created"]
+    ordering = ["-date_created"]
+    filter_fields = ('owner',)
+    
+    template_name = "webapp/job_list.html"
 
     def get_context_data(self, **kwargs):
         context = super(JobListView, self).get_context_data(**kwargs)

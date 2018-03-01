@@ -72,6 +72,7 @@
             job_fieldset.find('#id_type').val(job_template.type);
             job_fieldset.find('#id_status').val("initialized");
             job_fieldset.find('#id_progress').val(0);
+            job_fieldset.find('#id_owner').val("{{ user.username }}")
             /*job_fieldset.find('.icon-info').prop('title', job_template.description);*/
 
             job_fieldset.find('.row').not('.dummy').removeClass('hidden');

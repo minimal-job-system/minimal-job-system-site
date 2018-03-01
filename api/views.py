@@ -29,7 +29,7 @@ class JobTypeFilter(filters.FilterSet):
         model = Job
         fields = [
             'id', 'namespace', 'name', 'type_name', 'type', 'status',
-            'progress'
+            'progress', 'owner'
         ]
 
     def filter_type(self, queryset, name, value):

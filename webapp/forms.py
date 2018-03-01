@@ -9,7 +9,7 @@ class JobForm(ModelForm):
         exclude = ()
         widgets = {
             field: forms.HiddenInput()
-            for field in ['type', 'status', 'progress']
+            for field in ['type', 'status', 'progress', 'owner']
         }
 
 

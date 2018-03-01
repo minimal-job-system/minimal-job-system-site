@@ -197,7 +197,7 @@ def extract_parameter(assign_node, parameter_types):
                 if isinstance(keyword_node.value, ast.Name):
                     parameter["default"] = keyword_node.value.id
             if sys.version_info.major == 3:
-                if  isinstance(keyword_node.value, ast.NameConstant):
+                if isinstance(keyword_node.value, ast.NameConstant):
                     parameter["default"] = keyword_node.value.value
 
             if isinstance(keyword_node.value, ast.Str):

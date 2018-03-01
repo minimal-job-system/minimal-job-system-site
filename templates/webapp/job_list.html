@@ -32,13 +32,21 @@
 
 {% block content %}
     <h1>Job List</h1>
+    {% if is_system_user %}
+    <form class="text-right" action="" method="get">
+        {% for field in filter.form %}
+            {{ field.name|title }}: {{ field }}
+        {% endfor %}
+        <input type="submit" value="Apply Filter">
+    </form>
+    {% endif %}
     <table class="table table-striped">
         <thead class="thead-inverse">
             <tr style="background-color: black; color: white;">
                 <th>Creation Date</th>
                 <th>ID</th>
+                <th>Owner</th>
                 <th>Name</th>
-                <th>Type</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -54,12 +62,12 @@
                 </td>
             </tr>
             {% endif %}
-        {% for job in object_list %}
+        {% for job in filter.qs %}
             <tr id="job_{{ job.id }}_row">
                 <td>{{ job.date_created|date:'Y-m-d' }}</td>
                 <td>{{ job.id }}</td>
+                <td>{{ job.owner }}</td>
                 <td>{{ job.name }}</td>
-                <td>{{ job.type }}</td>
             {% if job.status == "unknown" %}
                 <td style="color: red">{{ job.status }}</td>
             {% else %}
