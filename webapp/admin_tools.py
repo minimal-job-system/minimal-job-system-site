@@ -1,6 +1,7 @@
 import abc
 import ast
 from glob import glob
+import os
 import six
 import sys
 
@@ -75,95 +76,114 @@ class SyncJobSourcesTool(Tool):
             if job_source.type != luigi_workflow_type:
                 continue
 
-            JobTemplate.objects.filter(type=luigi_workflow_type).delete()
+            JobTemplate.objects.filter(type=job_source.type).delete()
 
-            job_source_uri = job_source.uri
+            errors = sync_job_source(job_source)
+            if len(errors) > 0:
+                for error in errors:
+                    messages.error(request, error)
+                break
 
-            file_list = []
-            for file in glob(job_source_uri + "/*"):
-                if not file.endswith(".py"):
+        if len(errors) == 0:
+            messages.success(request, "Synchronization was successful!")
+
+
+def sync_job_source(job_source):
+    errors = []
+
+    def error_callback(ex):
+        errors.append(ex)
+
+    for root, dirs, files in os.walk(
+        job_source.uri, onerror=error_callback, topdown=True
+    ):
+        dirs = []  # stop recursion
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+
+            if not file_path.endswith(".py"):
+                continue
+
+            with open(file_path, 'r') as fp:
+                ast_node = ast.parse(fp.read())
+
+            workflow_class_nodes = []
+            for node in ast.walk(ast_node):
+                if not isinstance(node, ast.ClassDef):
                     continue
 
-                with open(file, 'r') as fp:
-                    ast_node = ast.parse(fp.read())
+                base_ids = [
+                    base.id for base in node.bases
+                    if isinstance(base, ast.Name)
+                ]
+                if any("JobSystemWorkflow" in id for id in base_ids):
+                    workflow_class_nodes.append(node)
 
-                workflow_class_nodes = []
-                for node in ast.walk(ast_node):
-                    if not isinstance(node, ast.ClassDef):
-                        continue
+            parameter_types = \
+                JobParameterDeclaration._meta.get_field('type').flatchoices
 
-                    base_ids = [
-                        base.id for base in node.bases
-                        if isinstance(base, ast.Name)
-                    ]
-                    if any("JobSystemWorkflow" in id for id in base_ids):
-                        workflow_class_nodes.append(node)
+            for class_node in workflow_class_nodes:
+                namespace = None
+                parameters = []
 
-                parameter_types = \
-                    JobParameterDeclaration._meta.get_field('type').flatchoices
-
-                for class_node in workflow_class_nodes:
-                    namespace = None
-                    parameters = []
-
-                    prev_child_node = None
-                    for child_node in ast.iter_child_nodes(class_node):
-                        # search for luigi.Parameter assignments
-                        # e.g. search_path = luigi.Parameter(default="")
-                        if isinstance(child_node, ast.Assign):
-                            assign_node = child_node
-                            if (
-                                isinstance(assign_node.value, ast.Str) and
-                                assign_node.targets[0].id == "task_namespace"
-                            ):
-                                namespace = assign_node.value.s
-
-                            if (
-                                isinstance(assign_node.value, ast.Call) and
-                                assign_node.value.func.value.id == "luigi"
-                            ):
-                                parameter = extract_parameter(
-                                    assign_node, parameter_types
-                                )
-                                parameters.append(parameter)
-
-                        # search for docstrings
-                        # Python does not treat strings defined IMMEDIATELY
-                        # after a global definition as a docstring!
-                        # Sphinx, however, does do so - which is certainly
-                        # not a bad practice
+                prev_child_node = None
+                for child_node in ast.iter_child_nodes(class_node):
+                    # search for luigi.Parameter assignments
+                    # e.g. search_path = luigi.Parameter(default="")
+                    if isinstance(child_node, ast.Assign):
+                        assign_node = child_node
                         if (
-                            isinstance(child_node, ast.Expr)
+                            isinstance(assign_node.value, ast.Str) and
+                            assign_node.targets[0].id == "task_namespace"
                         ):
-                            if (
-                                isinstance(prev_child_node, ast.Assign) and
-                                isinstance(prev_child_node.value, ast.Call) and
-                                prev_child_node.value.func.value.id == "luigi"
-                            ):
-                                expr_node = child_node
-                                if isinstance(expr_node.value, ast.Str):
-                                    parameter["description"] = \
-                                        expr_node.value.s
+                            namespace = assign_node.value.s
 
-                        prev_child_node = child_node
+                        if (
+                            isinstance(assign_node.value, ast.Call) and
+                            assign_node.value.func.value.id == "luigi"
+                        ):
+                            parameter = extract_parameter(
+                                assign_node, parameter_types
+                            )
+                            parameters.append(parameter)
 
-                    job_template = JobTemplate(
-                        namespace=namespace,
-                        name=class_node.name,
-                        type=job_source.type,
-                        description=ast.get_docstring(class_node)
-                    )
-                    job_template.save()
-                    for parameter in parameters:
-                        JobParameterDeclaration(
-                            template=job_template,
-                            name=parameter["name"],
-                            description=parameter["description"],
-                            type=parameter["type"],
-                            default=str(parameter["default"])
-                        ).save()
+                    # search for docstrings
+                    # Python does not treat strings defined IMMEDIATELY
+                    # after a global definition as a docstring!
+                    # Sphinx, however, does do so - which is certainly
+                    # not a bad practice
+                    if (
+                        isinstance(child_node, ast.Expr)
+                    ):
+                        if (
+                            isinstance(prev_child_node, ast.Assign) and
+                            isinstance(prev_child_node.value, ast.Call) and
+                            prev_child_node.value.func.value.id == "luigi"
+                        ):
+                            expr_node = child_node
+                            if isinstance(expr_node.value, ast.Str):
+                                parameter["description"] = \
+                                    expr_node.value.s
 
-            messages.success(request, "Synchronization was successful!")
+                    prev_child_node = child_node
+
+                job_template = JobTemplate(
+                    namespace=namespace,
+                    name=class_node.name,
+                    type=job_source.type,
+                    description=ast.get_docstring(class_node)
+                )
+                job_template.save()
+                for parameter in parameters:
+                    JobParameterDeclaration(
+                        template=job_template,
+                        name=parameter["name"],
+                        description=parameter["description"],
+                        type=parameter["type"],
+                        default=str(parameter["default"])
+                    ).save()
+
+    return errors
 
 
 def extract_parameter(assign_node, parameter_types):
