@@ -4,28 +4,30 @@
 
 {% block head_js_section %}
     <script>
-        setInterval(function() {
+        var refresh_interval_id = setInterval(function() {
             var xmlHttp = new XMLHttpRequest();
             //xmlHttp.open( "GET", "/api/jobs/?status=in progress", false );
-            xmlHttp.open( "GET", "/api/jobs", false );
+            xmlHttp.open("GET", "/api/jobs", true);
             xmlHttp.setRequestHeader("Content-type", "application/json");
-            xmlHttp.send( null );
-            jobs = JSON.parse(xmlHttp.responseText);
-            for (idx = 0; idx < jobs.length; ++idx) {
-                job = jobs[idx];
-                var job_status_row = $("tr#job_" + job['id'] + "_row td:nth-child(5)");
-                if (job['status'] == 'in progress') {
-                    var progress = $('<div>', {'class': 'progress'});
-                    var progress_bar = $('<div>', {'class':'progress-bar', 'role':'progressbar', 'aria-valuemin':'0', 'aria-valuemax':'100', 'style':'width: '+job['progress']+'%'});
-                    progress_bar.text(job['progress'] + '%');
-                    progress.html(progress_bar.get(0).outerHTML);
-                    //alert(JSON.stringify(progress, null, 4));
-                    job_status_row.html(progress.get(0).outerHTML);
-                }
-                else {
-                    job_status_row.html(job["status"]);
+            xmlHttp.onload = function() {
+                jobs = JSON.parse(xmlHttp.responseText);
+                for (idx = 0; idx < jobs.length; ++idx) {
+                    job = jobs[idx];
+                    var job_status_row = $("tr#job_" + job['id'] + "_row td:nth-child(5)");
+                    if (job['status'] == 'in progress') {
+                        var progress = $('<div>', {'class': 'progress'});
+                        var progress_bar = $('<div>', {'class':'progress-bar', 'role':'progressbar', 'aria-valuemin':'0', 'aria-valuemax':'100', 'style':'width: '+job['progress']+'%'});
+                        progress_bar.text(job['progress'] + '%');
+                        progress.html(progress_bar.get(0).outerHTML);
+                        //alert(JSON.stringify(progress, null, 4));
+                        job_status_row.html(progress.get(0).outerHTML);
+                    }
+                    else {
+                        job_status_row.html(job["status"]);
+                    }
                 }
             }
+            xmlHttp.send(null);
         }, 2000);
     </script>
 {% endblock head_js_section %}
