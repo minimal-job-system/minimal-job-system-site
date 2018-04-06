@@ -1,5 +1,10 @@
+from dateutil.parser import parse
+from decimal import Decimal, InvalidOperation
+
 from django.contrib.postgres.fields import JSONField
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import DecimalValidator, \
+    MinValueValidator, MaxValueValidator
 from django.db import models
 
 
@@ -56,6 +61,7 @@ class JobParameterDeclaration(models.Model):
     description = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     default = models.CharField(max_length=255, blank=False)
+    style_class = models.CharField(max_length=255, null=True)
 
     def __str__(self):
         """Return a human readable representation of the model instance."""
@@ -93,6 +99,40 @@ class JobParameter(models.Model):
     name = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     value = models.CharField(max_length=255, blank=False)
+
+    def clean(self):
+        super(JobParameter, self).clean()
+        
+        if PARAMETER_TYPE_CHOICES[self.type][1] == "Integer":
+            try:
+                DecimalValidator(max_digits=None, decimal_places=0)(
+                    Decimal(self.value)
+                )
+            except (ValidationError, InvalidOperation):
+                raise ValidationError({
+                    'value': ValidationError('Invalid integer value: "%(value)s"', code='invalid', params={'value': self.value})
+                })
+        if PARAMETER_TYPE_CHOICES[self.type][1] == "Decimal":
+            try:
+                DecimalValidator(max_digits=None, decimal_places=None)(
+                    Decimal(self.value)
+                )
+            except (ValidationError, InvalidOperation):
+                raise ValidationError({
+                    'value': ValidationError('Invalid decimal value: "%(value)s"', code='invalid', params={'value': self.value})
+                })
+        if PARAMETER_TYPE_CHOICES[self.type][1] == "Boolean":
+            if self.value.lower() not in ["true", "false"]:
+                raise ValidationError({
+                    'value': ValidationError('Invalid boolean value: "%(value)s"', code='invalid', params={'value': self.value})
+                })
+        if PARAMETER_TYPE_CHOICES[self.type][1] == "Datetime":
+            try:
+                self.value = parse(self.value).isoformat()
+            except ValueError:
+                raise ValidationError({
+                    'value': ValidationError('Invalid datetime value: "%(value)s"', code='invalid', params={'value': self.value})
+                })
 
     def __str__(self):
         """Return a human readable representation of the model instance."""
