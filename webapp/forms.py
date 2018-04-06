@@ -20,7 +20,7 @@ class JobParameterForm(ModelForm):
         model = JobParameter
         exclude = ()
         widgets = {
-            field: forms.HiddenInput() for field in ['type']
+            field: forms.HiddenInput() for field in ['type', 'value']
         }
 
 

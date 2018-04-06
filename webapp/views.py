@@ -71,7 +71,7 @@ class JobRegisterView(LoginRequiredMixin, TemplateView):
 
         if not all([job_form.is_valid(), job_parameter_form_set.is_valid()]):
             context.update({
-                'job_form': context['job_form']
+                'job_form': job_form
             })
             context.update({
                 'job_parameter_form_set': job_parameter_form_set

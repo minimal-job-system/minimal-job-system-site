@@ -100,6 +100,24 @@
                 job_params_fieldset_row_tpl.find('input[id$=type]').val(param_decl.type);
                 job_params_fieldset_row_tpl.find('input[id$=type-str]').val(param_types.get(param_decl.type));
                 job_params_fieldset_row_tpl.find('input[id$=value]').val(param_decl.default);
+                job_params_fieldset_row_tpl.find('input[id$=value-str]').val(param_decl.default);
+                if (param_types.get(param_decl.type) == "Boolean") {
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').parent().addClass('pull-left');
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').attr('type', 'checkbox');
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').prop('checked',
+                        param_decl.default.toLowerCase() == "true"
+                    );
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').attr('onchange', undefined).change(function() {
+                        var fieldset_row_value_id = $(this).attr('id').replace('value-str', 'value');
+                        job_params_fieldset.find('input[id$=' + fieldset_row_value_id + ']').val($(this).prop('checked'));
+                    });
+                } else {
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').attr('type', 'text');
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').attr('onchange', undefined).change(function() {
+                        var fieldset_row_value_id = $(this).attr('id').replace('value-str', 'value');
+                        job_params_fieldset.find('input[id$=' + fieldset_row_value_id + ']').val($(this).val());
+                    });
+                }
                 /*job_params_fieldset_row_tpl.find('span.icon-info').prop('title', param_decl.description);*/
 
                 job_params_fieldset_row_tpl.appendTo(job_params_fieldset);
@@ -279,10 +297,26 @@
         </div>
         <div class="col-lg-6">
             {% with job_param_form.value as field %}
-            <div class="form-group {% if field.errors|length > 0 %}has-error{% endif %}">
-                <input id="id_{{ job_param_form.prefix }}-{{ field.label|lower }}" name="{{ job_param_form.prefix }}-{{ field.label|lower }}" value="{{ field.value }}" type="text" class="form-control required">
-                <span class="help-block">{% for error in field.errors %}{{ error }}{% endfor %}</span>
-            </div>
+                {% with job_param_form.type.value|to_int as param_type %}
+                    <div class="form-group {% if field.errors|length > 0 %}has-error{% endif %} {% if parameter_types|get_value:param_type == 'Boolean' %}pull-left{% endif %}">
+                        <input
+                            id="id_{{ job_param_form.prefix }}-{{ field.label|lower }}-str" name="{{ job_param_form.prefix }}-{{ field.label|lower }}-str" value="{{ field.value }}"
+                                {% if parameter_types|get_value:param_type == "Boolean" %}
+                                    type="checkbox"
+                                    onchange="$('#id_{{ job_param_form.prefix }}-{{ field.label|lower }}').val(this.checked);"
+                                    {% if field.value|lower == "true" %}
+                                        checked
+                                    {% endif %}
+                                    style="width: auto; text-align:right;"
+                                {% else %}
+                                    type="text"
+                                    onchange="$('#id_{{ job_param_form.prefix }}-{{ field.label|lower }}').val(this.value);"
+                                {% endif %}
+                            class="form-control required"
+                        >
+                        <span class="help-block">{% for error in field.errors %}{{ error }}{% endfor %}</span>
+                    </div>
+                {% endwith %}
             {% endwith %}
         </div>
         <div class="col-lg-1">

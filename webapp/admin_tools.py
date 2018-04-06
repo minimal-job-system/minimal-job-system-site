@@ -125,9 +125,9 @@ def sync_job_source(job_source):
             for class_node in workflow_class_nodes:
                 namespace = None
                 parameters = []
-
-                prev_child_node = None
-                for child_node in ast.iter_child_nodes(class_node):
+                
+                child_nodes = list(ast.iter_child_nodes(class_node))
+                for idx, child_node in enumerate(child_nodes):
                     # search for luigi.Parameter assignments
                     # e.g. search_path = luigi.Parameter(default="")
                     if isinstance(child_node, ast.Assign):
@@ -140,6 +140,7 @@ def sync_job_source(job_source):
 
                         if (
                             isinstance(assign_node.value, ast.Call) and
+                            hasattr(assign_node.value.func, 'value') and
                             assign_node.value.func.value.id == "luigi"
                         ):
                             parameter = extract_parameter(
@@ -147,25 +148,33 @@ def sync_job_source(job_source):
                             )
                             parameters.append(parameter)
 
-                    # search for docstrings
-                    # Python does not treat strings defined IMMEDIATELY
-                    # after a global definition as a docstring!
-                    # Sphinx, however, does do so - which is certainly
-                    # not a bad practice
-                    if (
-                        isinstance(child_node, ast.Expr)
-                    ):
-                        if (
-                            isinstance(prev_child_node, ast.Assign) and
-                            isinstance(prev_child_node.value, ast.Call) and
-                            prev_child_node.value.func.value.id == "luigi"
-                        ):
-                            expr_node = child_node
-                            if isinstance(expr_node.value, ast.Str):
-                                parameter["description"] = \
-                                    expr_node.value.s
+                            # search for annotations
+                            # this feature has no PEP specification
+                            if (
+                                idx-1 >= 0 and
+                                isinstance(child_nodes[idx-1], ast.Expr)
+                            ):
+                                expr_node = child_nodes[idx-1]
+                                if isinstance(expr_node.value, ast.Dict):
+                                    annotations = {}
+                                    for k, v in zip(
+                                        expr_node.value.keys,
+                                        expr_node.value.values
+                                    ):
+                                        parameter["annotations"][k.s] = v.s
 
-                    prev_child_node = child_node
+                            # search for docstrings
+                            # Python does not treat strings defined IMMEDIATELY
+                            # after a global definition as a docstring!
+                            # Sphinx, however, does do so - which is certainly
+                            # not a bad practice
+                            if (
+                                idx + 1 < len(child_nodes) and
+                                isinstance(child_nodes[idx+1], ast.Expr)
+                            ):
+                                expr_node = child_nodes[idx+1]
+                                if isinstance(expr_node.value, ast.Str):
+                                    parameter["description"] = expr_node.value.s
 
                 job_template = JobTemplate(
                     namespace=namespace,
@@ -180,7 +189,11 @@ def sync_job_source(job_source):
                         name=parameter["name"],
                         description=parameter["description"],
                         type=parameter["type"],
-                        default=str(parameter["default"])
+                        default=str(
+                            parameter["annotations"].get("default") or
+                            parameter["default"]
+                        ),
+                        style_class=parameter["annotations"].get("style_class")
                     ).save()
 
     return errors
@@ -191,25 +204,27 @@ def extract_parameter(assign_node, parameter_types):
         "name": None,
         "description": None,
         "type": None,
-        "default": None
+        "default": None,
+        'annotations': {}
     }
     parameter["name"] = assign_node.targets[0].id
 
-    search_type = None
+    rev_parameter_types = {v:k for k, v in dict(parameter_types).items()}
     if assign_node.value.func.attr == "IntParameter":
-        search_type = "Integer"
+        parameter["type"] = rev_parameter_types.get("Integer", None)
+        parameter["default"] = ""
     if assign_node.value.func.attr == "FloatParameter":
-        search_type = "Decimal"
+        parameter["type"] = rev_parameter_types.get("Decimal", None)
+        parameter["default"] = ""
     if assign_node.value.func.attr == "BoolParameter":
-        search_type = "Boolean"
+        parameter["type"] = rev_parameter_types.get("Boolean", None)
+        parameter["default"] = "false"
     if assign_node.value.func.attr == "DateSecondParameter":
-        search_type = "Datetime"
+        parameter["type"] = rev_parameter_types.get("Datetime", None)
+        parameter["default"] = ""
     if assign_node.value.func.attr == "Parameter":
-        search_type = "String"
-
-    parameter["type"] = next(
-        (k for k, v in parameter_types if v == search_type), None
-    )
+        parameter["type"] = rev_parameter_types.get("String", None)
+        parameter["default"] = ""
 
     for keyword_node in assign_node.value.keywords:
         if keyword_node.arg == "default":
