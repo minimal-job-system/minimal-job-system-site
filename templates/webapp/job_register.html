@@ -107,6 +107,7 @@
                     job_params_fieldset_row_tpl.find('input[id$=value-str]').prop('checked',
                         param_decl.default.toLowerCase() == "true"
                     );
+                    job_params_fieldset_row_tpl.find('input[id$=value-str]').css('width', 'auto');
                     job_params_fieldset_row_tpl.find('input[id$=value-str]').attr('onchange', undefined).change(function() {
                         var fieldset_row_value_id = $(this).attr('id').replace('value-str', 'value');
                         job_params_fieldset.find('input[id$=' + fieldset_row_value_id + ']').val($(this).prop('checked'));
@@ -307,7 +308,7 @@
                                     {% if field.value|lower == "true" %}
                                         checked
                                     {% endif %}
-                                    style="width: auto; text-align:right;"
+                                    style="width: auto;"
                                 {% else %}
                                     type="text"
                                     onchange="$('#id_{{ job_param_form.prefix }}-{{ field.label|lower }}').val(this.value);"
