@@ -47,15 +47,15 @@ class JobRegisterView(LoginRequiredMixin, TemplateView):
         context['job_templates'] = JobTemplate.objects.all()
 
         if self.request.POST:
-            context['selected_job_templates'] = \
+            context['selected_job_template'] = \
                 self.request.POST["job_templates"]
+            context['job_form'] = JobForm(self.request.POST)
             context['job_parameter_form_set'] = \
                 JobParameterFormSet(self.request.POST)
-            context['job_form'] = JobForm(self.request.POST)
         else:
-            context['selected_job_templates'] = ['']
-            context['job_parameter_form_set'] = JobParameterFormSet()
+            context['selected_job_template'] = -1
             context['job_form'] = JobForm()
+            context['job_parameter_form_set'] = JobParameterFormSet()
 
         return context
 
