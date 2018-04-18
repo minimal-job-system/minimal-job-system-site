@@ -5,12 +5,12 @@
 {% block head_js_section %}
     <script>
         var refresh_interval_id = setInterval(function() {
-            var xmlHttp = new XMLHttpRequest();
-            //xmlHttp.open( "GET", "/api/jobs/?status=in progress", false );
-            xmlHttp.open("GET", "/api/jobs", true);
-            xmlHttp.setRequestHeader("Content-type", "application/json");
-            xmlHttp.onload = function() {
-                jobs = JSON.parse(xmlHttp.responseText);
+            $.ajax({
+                async: true,
+                type: "GET",
+                url: "/api/jobs",
+                contentType: "application/json"
+            }).done(function( jobs ) {
                 for (idx = 0; idx < jobs.length; ++idx) {
                     job = jobs[idx];
                     var job_status_row = $("tr#job_" + job['id'] + "_row td:nth-child(5)");
@@ -26,8 +26,7 @@
                         job_status_row.html(job["status"]);
                     }
                 }
-            }
-            xmlHttp.send(null);
+            });
         }, 2000);
     </script>
 {% endblock head_js_section %}

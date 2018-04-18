@@ -29,60 +29,61 @@
 
             {% if job_form.name.value != None %}
                 // load job template
-                var xmlHttp = new XMLHttpRequest();
-                xmlHttp.open( "GET", "/api/jobtemplates/{{ selected_job_template }}", false );
-                xmlHttp.setRequestHeader("Content-type", "application/json");
-                xmlHttp.send( null );
-                job_template = JSON.parse(xmlHttp.responseText);
+                $.ajax({
+                    async: true,
+                    type: "GET",
+                    url: "/api/jobtemplates/{{ selected_job_template }}",
+                    contentType: "application/json"
+                }).done(function( job_template ) {
+                    var jobFieldSet = buildJobFieldSet({
+                        'type': '{{ job_form.type.value }}',
+                        'status': '{{ job_form.status.value }}',
+                        'progress': '{{ job_form.progress.value }}',
+                        'owner': '{{ job_form.owner.value }}',
+                        'namespace': '{{ job_form.namespace.value }}',
+                        'name': '{{ job_form.name.value }}',
+                        'description': job_template.description
+                    });
 
-                var jobFieldSet = buildJobFieldSet({
-                    'type': '{{ job_form.type.value }}',
-                    'status': '{{ job_form.status.value }}',
-                    'progress': '{{ job_form.progress.value }}',
-                    'owner': '{{ job_form.owner.value }}',
-                    'namespace': '{{ job_form.namespace.value }}',
-                    'name': '{{ job_form.name.value }}',
-                    'description': job_template.description
+                    $('#id_job_fieldset').html(jobFieldSet.getJQueryElement());
+
+                    {% if job_parameter_form_set.forms|length > 0 %}
+                        paramTypes = new Map();
+                        {% for id, name in parameter_types %}
+                            paramTypes.set({{ id }}, "{{ name }}");
+                        {% endfor %}
+
+                        paramDescription = new Map();
+                        for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
+                            paramDecl = job_template.parameter_declarations[idx];
+                            paramDescription.set(paramDecl.name, paramDecl.description);
+                        }
+
+                        jobParams = [];
+                        {% for job_param_form in job_parameter_form_set.forms %}
+                            jobParams.push({
+                                'id': '{{ job_param_form.id.value }}',
+                                'type-str': paramTypes.get({{ job_param_form.type.value }}),
+                                'value-str': '{{ job_param_form.value.value }}',
+                                'name': '{{ job_param_form.name.value }}',
+                                'type': '{{ job_param_form.type.value }}',
+                                'value': '{{ job_param_form.value.value }}',
+                                'description': paramDescription.get('{{ job_param_form.name.value }}'),
+                                'errors': [{% for error in job_param_form.value.errors %}'{{ error }}',{% endfor %}]
+                            });
+                        {% endfor %}
+
+                        var jobParamsFieldSet = buildJobParamsFieldSet(jobParams);
+
+                        $('#id_job_parameter_fieldset').html(jobParamsFieldSet.getJQueryElement());
+
+                        // update form actions
+                        $('.form-actions button').attr('disabled', false);
+
+                        // activate tooltips
+                        $('[data-toggle="tooltip"]').tooltip();
+                    {% endif %}
                 });
-
-                $('#id_job_fieldset').html(jobFieldSet.getJQueryElement());
-
-                {% if job_parameter_form_set.forms|length > 0 %}
-                    paramTypes = new Map();
-                    {% for id, name in parameter_types %}
-                        paramTypes.set({{ id }}, "{{ name }}");
-                    {% endfor %}
-
-                    paramDescription = new Map();
-                    for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
-                        paramDecl = job_template.parameter_declarations[idx];
-                        paramDescription.set(paramDecl.name, paramDecl.description);
-                    }
-
-                    jobParams = [];
-                    {% for job_param_form in job_parameter_form_set.forms %}
-                        jobParams.push({
-                            'id': '{{ job_param_form.id.value }}',
-                            'type-str': paramTypes.get({{ job_param_form.type.value }}),
-                            'value-str': '{{ job_param_form.value.value }}',
-                            'name': '{{ job_param_form.name.value }}',
-                            'type': '{{ job_param_form.type.value }}',
-                            'value': '{{ job_param_form.value.value }}',
-                            'description': paramDescription.get('{{ job_param_form.name.value }}'),
-                            'errors': [{% for error in job_param_form.value.errors %}'{{ error }}',{% endfor %}]
-                        });
-                    {% endfor %}
-
-                    var jobParamsFieldSet = buildJobParamsFieldSet(jobParams);
-
-                    $('#id_job_parameter_fieldset').html(jobParamsFieldSet.getJQueryElement());
-
-                    // update form actions
-                    $('.form-actions button').attr('disabled', false);
-
-                    // activate tooltips
-                    $('[data-toggle="tooltip"]').tooltip();
-                {% endif %}
 
             {% endif %}
             
@@ -91,59 +92,61 @@
         });
 
         function reload_job(template_id) {
-           if (template_id === "") {
+            if (template_id === "") {
                 return;
             }
 
             // load job template
-            var xmlHttp = new XMLHttpRequest();
-            xmlHttp.open( "GET", "/api/jobtemplates/" + template_id, false );
-            xmlHttp.setRequestHeader("Content-type", "application/json");
-            xmlHttp.send( null );
-            job_template = JSON.parse(xmlHttp.responseText);
-            /*alert(JSON.stringify(job_template, null, 4))*/
+            $.ajax({
+                async: true,
+                type: "GET",
+                url: "/api/jobtemplates/" + template_id,
+                contentType: "application/json"
+            }).done(function( job_template ) {
+                /*alert(JSON.stringify(job_template, null, 4))*/
 
-            param_types = new Map();
-            {% for id, name in parameter_types %}
-                param_types.set({{ id }}, "{{ name }}");
-            {% endfor %}
+                param_types = new Map();
+                {% for id, name in parameter_types %}
+                    param_types.set({{ id }}, "{{ name }}");
+                {% endfor %}
 
-            var jobFieldSet = buildJobFieldSet({
-                    'type': job_template.type,
-                    'status': 'initialized',
-                    'progress': 0,
-                    'owner': '{{ user.username }}',
-                    'namespace': job_template.namespace,
-                    'name': job_template.name,
-                    'description': job_template.description
-            });
-
-            $('#id_job_fieldset').html(jobFieldSet.getJQueryElement());
-            
-            jobParams = [];
-            for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
-                param_decl = job_template.parameter_declarations[idx];
-                jobParams.push({
-                    'id': '',
-                    'type-str': param_types.get(param_decl.type),
-                    'value-str': param_decl.default,
-                    'name': param_decl.name,
-                    'type': param_decl.type,
-                    'value': param_decl.default,
-                    'description': param_decl.description,
-                    'errors': [{% for error in field.errors %}'{{ error }},'{% endfor %}]
+                var jobFieldSet = buildJobFieldSet({
+                        'type': job_template.type,
+                        'status': 'initialized',
+                        'progress': 0,
+                        'owner': '{{ user.username }}',
+                        'namespace': job_template.namespace,
+                        'name': job_template.name,
+                        'description': job_template.description
                 });
-            }
 
-            var jobParamsFieldSet = buildJobParamsFieldSet(jobParams);
+                $('#id_job_fieldset').html(jobFieldSet.getJQueryElement());
+                
+                jobParams = [];
+                for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
+                    param_decl = job_template.parameter_declarations[idx];
+                    jobParams.push({
+                        'id': '',
+                        'type-str': param_types.get(param_decl.type),
+                        'value-str': param_decl.default,
+                        'name': param_decl.name,
+                        'type': param_decl.type,
+                        'value': param_decl.default,
+                        'description': param_decl.description,
+                        'errors': [{% for error in field.errors %}'{{ error }},'{% endfor %}]
+                    });
+                }
 
-            $('#id_job_parameter_fieldset').html(jobParamsFieldSet.getJQueryElement());
+                var jobParamsFieldSet = buildJobParamsFieldSet(jobParams);
 
-            // update form actions
-            $('.form-actions button').attr('disabled', false);
+                $('#id_job_parameter_fieldset').html(jobParamsFieldSet.getJQueryElement());
 
-            // activate tooltips
-            $('[data-toggle="tooltip"]').tooltip();
+                // update form actions
+                $('.form-actions button').attr('disabled', false);
+
+                // activate tooltips
+                $('[data-toggle="tooltip"]').tooltip();
+            });
         }
 
     </script>
