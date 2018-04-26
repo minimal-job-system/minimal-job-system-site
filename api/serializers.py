@@ -1,6 +1,26 @@
+import datetime
 from rest_framework import serializers
 from webapp.models import JobTemplate, Job, JobParameterDeclaration, \
-    JobParameter
+    JobParameter, JobLogEntry
+
+
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` and 'exclude' argument that
+    controls which fields should be displayed.
+    """
+    def __init__(self, *args, **kwargs):
+        fields = kwargs.pop('fields', None)
+        exclude = kwargs.pop('exclude', None)
+
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            for field_name in set(self.fields.keys()) - set(fields):
+                self.fields.pop(field_name)
+        if exclude is not None:
+            for exclude_name in set(exclude):
+                self.fields.pop(exclude_name)
 
 
 class JobParameterDeclarationSerializer(serializers.ModelSerializer):
@@ -27,6 +47,16 @@ class JobTemplateSerializer(serializers.ModelSerializer):
         read_only_fields = ('date_created', 'date_modified')
 
 
+class JobLogEntrySerializer(serializers.ModelSerializer):
+    """Serializer to map the Model instance into JSON format."""
+    date_created = serializers.DateTimeField(default=datetime.datetime.now())
+    
+    class Meta:
+        """Meta class to map serializer's fields with the model fields."""
+        model = JobLogEntry
+        fields = ('id', 'level', 'message', 'date_created')
+
+
 class JobParameterSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
     class Meta:
@@ -38,12 +68,13 @@ class JobParameterSerializer(serializers.ModelSerializer):
 class JobSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
     parameters = JobParameterSerializer(many=True, read_only=True)
+    log_entries = JobLogEntrySerializer(many=True, read_only=True)
 
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = Job
         fields = (
             'id', 'namespace', 'name', 'type', 'status', 'progress', 'owner',
-            'date_created', 'date_modified', 'parameters'
+            'date_created', 'date_modified', 'parameters', 'log_entries'
         )
         read_only_fields = ('date_created', 'date_modified')

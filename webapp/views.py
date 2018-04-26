@@ -12,7 +12,7 @@ from django_filters.views import FilterView
 
 from datetime import datetime, timedelta
 
-from .models import JobTemplate, Job, JobParameter
+from .models import JobTemplate, Job, JobParameter, JobLogEntry
 from .forms import JobForm, JobParameterFormSet
 
 

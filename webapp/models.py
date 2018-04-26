@@ -18,6 +18,14 @@ PARAMETER_TYPE_CHOICES = (
     (3, 'Boolean'),
     (4, 'Datetime'),
 )
+LOG_LEVEL_CHOICES = (
+    (50, 'CRITICAL'),
+    (40, 'ERROR'),
+    (30, 'WARNING'),
+    (20, 'INFO'),
+    (10, 'DEBUG'),
+    (0, 'NOTSET'),
+)
 
 
 class JobSource(models.Model):
@@ -137,3 +145,20 @@ class JobParameter(models.Model):
     def __str__(self):
         """Return a human readable representation of the model instance."""
         return "Job Parameter: {}".format(self.name)
+
+
+class JobLogEntry(models.Model):
+    """This class represents a job log entry."""
+    id = models.AutoField(primary_key=True)
+    job = models.ForeignKey(
+        'Job',
+        related_name='log_entries',
+        on_delete=models.CASCADE,
+    )
+    level = models.IntegerField(choices=LOG_LEVEL_CHOICES, blank=False)
+    message = models.CharField(max_length=255, blank=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        """Return a human readable representation of the model instance."""
+        return "Job Log Entry: {}".format(self.name)

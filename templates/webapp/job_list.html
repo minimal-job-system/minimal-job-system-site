@@ -107,7 +107,7 @@
                 <td colspan="5" style="padding: 0px;">
                     <div id="details_{{ job.id }}" class="collapse">
                         <fieldset>
-                        <legend style="font-size: 14px; margin: 0px;">Parameters:</legend>
+                        <legend style="font-size: 14px; margin: 0px;"><b>Parameters:</b></legend>
                             {% for parameter in job.parameters.all %}
                                 <table style="width: 100%;">
                                     <tr>
@@ -117,6 +117,21 @@
                                 </table>
                             {% endfor %}
                         </fieldset>
+                        <fieldset>
+                        <legend style="font-size: 14px; margin: 0px;"><b>Log:</b></legend>
+                            {% for log_entry in job.log_entries.all %}
+                                <table style="width: 100%;">
+                                    <tr>
+                                        <td style="width: 100px;">{{ log_entry.date_created|date:'H:i:s T' }}</td>
+                                        <td style="width: 100px;"> | {{ log_entry.get_level_display }} | </td>
+                                        <td>{{ log_entry.message }}</td>
+                                    </tr>
+                                </table>
+                            {% empty %}
+                                -- empty --
+                            {% endfor %}
+                        </fieldset>
+                        </br>
                     </div>
                 </td>
             </tr>
