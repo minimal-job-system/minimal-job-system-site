@@ -13,21 +13,87 @@
             }).done(function( jobs ) {
                 for (idx = 0; idx < jobs.length; ++idx) {
                     job = jobs[idx];
-                    var job_status_row = $("tr#job_" + job['id'] + "_row td:nth-child(5)");
+                    var job_row = $("tr#job_" + job['id'] + "_row");
+                    var job_status_col = job_row.find("td:nth-child(5)");
                     if (job['status'] == 'in progress') {
                         var progress = $('<div>', {'class': 'progress'});
                         var progress_bar = $('<div>', {'class':'progress-bar', 'role':'progressbar', 'aria-valuemin':'0', 'aria-valuemax':'100', 'style':'width: '+job['progress']+'%'});
                         progress_bar.text(job['progress'] + '%');
                         progress.html(progress_bar.get(0).outerHTML);
                         //alert(JSON.stringify(progress, null, 4));
-                        job_status_row.html(progress.get(0).outerHTML);
+                        job_status_col.html(progress.get(0).outerHTML);
                     }
                     else {
-                        job_status_row.html(job["status"]);
+                        job_status_col.html(job["status"]);
                     }
                 }
             });
         }, 2000);
+    </script>
+    <script>
+        function reload_job_details(job_id) {
+            if (job_id === "") {
+                return;
+            }
+            
+            $.ajax({
+                async: true,
+                type: "GET",
+                url: "/api/jobs/" + job_id,
+                contentType: "application/json"
+            }).done(function( job ) {
+                var job_details_row = $("#job_" + job['id'] + "_details");
+                job_details_row.empty();
+                
+                var job_parameters_fieldset = $('<fieldset>');
+
+                var job_parameters_legend = $('<legend>', {'style': 'font-size: 14px; margin: 0px;'});
+                job_parameters_legend.html('<b>Parameters:</b>');
+                job_parameters_fieldset.append(job_parameters_legend);
+
+                var parameter_table = $('<table>', {'width': '100%'});
+                for (idx=0; idx<job['parameters'].length; ++idx) {
+                    var parameter_row = $('<tr>');
+                    parameter_row.append('<td style="width: 200px;">' + job['parameters'][idx].name + '</td>');
+                    parameter_row.append('<td>' + job['parameters'][idx].value + '</td>');
+                    parameter_table.append(parameter_row);
+                }
+                job_parameters_fieldset.append(parameter_table);
+
+                job_details_row.append(job_parameters_fieldset);
+
+                var job_log_entries_fieldset = $('<fieldset>');
+
+                var job_log_entries_legend = $('<legend>', {'style': 'font-size: 14px; margin: 0px;'});
+                job_log_entries_legend.html('<b>Log:</b>');
+                job_log_entries_fieldset.append(job_log_entries_legend);
+
+                logLevels = new Map();
+                {% for id, name in log_levels %}
+                    logLevels.set({{ id }}, "{{ name }}");
+                {% endfor %}
+
+                var log_entry_table = $('<table>', {'width': '100%'});
+                for (idx=0; idx<job['log_entries'].length; ++idx) {
+                   var log_entry_row = $('<tr>');
+                   log_entry_row.append('<td style="width: 100px;">' + job['log_entries'][idx].date_created.substr(11, 8) + ' UTC' + '</td>');
+                   log_entry_row.append('<td style="width: 100px;">' + '| ' + logLevels.get(job['log_entries'][idx].level) + ' |' + '</td>');
+                   log_entry_row.append('<td>' + job['log_entries'][idx].message + '</td>');
+                   log_entry_table.append(log_entry_row);
+                }
+                if (job['log_entries'].length == 0) {
+                   var log_entry_row = $('<tr>');
+                   log_entry_row.append('<td style="width: 200px;">-- empty --</td>');
+                   log_entry_row.append('<td>&nbsp;</td>');
+                   log_entry_table.append(log_entry_row);
+                }
+                job_log_entries_fieldset.append(log_entry_table);
+                
+                job_log_entries_fieldset.append('<br/>');
+
+                job_details_row.append(job_log_entries_fieldset);
+            });
+        }
     </script>
 {% endblock head_js_section %}
 
@@ -86,7 +152,7 @@
             {% endif %}
                 <!--<td><button>Edit</button></td>-->
                 <td>
-                    <a href="#details_{{ job.id }}" data-toggle="collapse" class="btn btn-primary btn-sm" role="button">
+                    <a href="#job_{{ job.id }}_details" data-toggle="collapse" class="btn btn-primary btn-sm" role="button" onclick="reload_job_details({{ job.id }});">
                         <span class="glyphicon glyphicon-info-sign"></span> Details
                     </a>
                 </td>
@@ -105,33 +171,8 @@
             <tr id="job_{{ job.id }}_details_row">
                 <td style="padding: 0px;" />
                 <td colspan="5" style="padding: 0px;">
-                    <div id="details_{{ job.id }}" class="collapse">
-                        <fieldset>
-                        <legend style="font-size: 14px; margin: 0px;"><b>Parameters:</b></legend>
-                            {% for parameter in job.parameters.all %}
-                                <table style="width: 100%;">
-                                    <tr>
-                                        <td style="width: 200px;">{{ parameter.name }}</td>
-                                        <td>{{ parameter.value }}</td>
-                                    </tr>
-                                </table>
-                            {% endfor %}
-                        </fieldset>
-                        <fieldset>
-                        <legend style="font-size: 14px; margin: 0px;"><b>Log:</b></legend>
-                            {% for log_entry in job.log_entries.all %}
-                                <table style="width: 100%;">
-                                    <tr>
-                                        <td style="width: 100px;">{{ log_entry.date_created|date:'H:i:s T' }}</td>
-                                        <td style="width: 100px;"> | {{ log_entry.get_level_display }} | </td>
-                                        <td>{{ log_entry.message }}</td>
-                                    </tr>
-                                </table>
-                            {% empty %}
-                                -- empty --
-                            {% endfor %}
-                        </fieldset>
-                        </br>
+                    <div id="job_{{ job.id }}_details" class="collapse">
+                        &nbsp;
                     </div>
                 </td>
             </tr>

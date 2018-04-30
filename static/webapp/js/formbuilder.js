@@ -1,6 +1,6 @@
 /*!
 * FormBuilder v0.0.1
-* Copyright 2018 Group P. Liberali, Friedrich Miescher Institute, Basel
+* Copyright 2018 Dario Vischi
 * Licensed under the MIT license
 */
 "use strict";

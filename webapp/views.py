@@ -24,6 +24,7 @@ def index(request):
 
 class JobListView(FilterView):
     model = Job
+    queryset = Job.objects.filter(date_created__gte=datetime.now()-timedelta(days=30))
     ordering = ["-date_created"]
     filter_fields = ('owner',)
 
@@ -33,6 +34,8 @@ class JobListView(FilterView):
         context = super(JobListView, self).get_context_data(**kwargs)
         context['is_system_user'] = \
             self.request.user.groups.filter(name='jobsys').exists()
+        context['log_levels'] = \
+            JobLogEntry._meta.get_field('level').flatchoices
         return context
 
 
