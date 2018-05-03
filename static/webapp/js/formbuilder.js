@@ -124,6 +124,7 @@ function FormGroupControl(labelElement, formElement, helpMessage) {
         } else {
             formGroupControl.attr('class', 'form-group has-error');
         }
+        formGroupControl.attr('style', 'margin: 0px;');
 
         if (this.labelElement) {
             if (!("class" in this.labelElement.attributes)) {
@@ -173,6 +174,7 @@ function GridCellControl(htmlElement, widthWeight, isHidden) {
         if (this.isHidden) {
             gridCellControl.addClass('hidden');
         }
+        gridCellControl.attr('style', 'margin: 8px 0px;');
         if (this.htmlElement) {
             gridCellControl.append(this.htmlElement.getJQueryElement());
         }
@@ -183,15 +185,19 @@ GridCellControl.prototype = Object.create(  // simulate inheritance
     HtmlStructuralElement.prototype, {'constructor': GridCellControl}
 );
 
-function GridRowControl(gridCellControls, isHeader) {
+function GridRowControl(gridCellControls, isHeader, isDangerous) {
     this.gridCellControls = gridCellControls || [];
     this.isHeader = isHeader || false;
+    this.isDangerous = isDangerous || false;
 
     this.getJQueryElement = function() {
         var gridRowControl = $('<div/>');
         gridRowControl.attr('class', 'row');
         if (this.isHeader) {
-            formColumn.addClass('title');
+            gridRowControl.addClass('title');
+        }
+        if (this.isDangerous) {
+            gridRowControl.addClass('bg-danger');
         }
         $.each(this.gridCellControls, function(idx, gridCellControl) {
             gridRowControl.append(gridCellControl.getJQueryElement());
@@ -287,7 +293,7 @@ function buildJobFieldSet(job) {
                     'data-placement': 'right',
                     'data-title': job['description'],
                     'type': 'button',
-                    'style': 'width: auto; border-color: white; color: #337ab7;'
+                    'style': 'width: auto; color: #337ab7;'
                 }, '<span class="glyphicon glyphicon-info-sign icon-info"></span>'
             );
         }
@@ -367,7 +373,7 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                                 '$(\'#id_parameters-' + param_idx.toString() + '-' + modelField.name + '\').attr(\'value\', $(this).is(\':checked\').toString());'
                                 :
                                 '',
-                            'style': 'width: auto;',
+                            'style': 'width: auto; margin: 0px;',
                             'checked': jobParam[modelField.name].toLowerCase() == 'true'
                         }, null
                     );
@@ -396,7 +402,7 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                         'data-placement': 'right',
                         'data-title': jobParam['description'],
                         'type': 'button',
-                        'style': 'width: auto; border-color: white; color: #337ab7;'
+                        'style': 'width: auto; color: #337ab7;'
                     }, '<span class="glyphicon glyphicon-info-sign icon-info"></span>'
                 );
             }
@@ -412,7 +418,7 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                 )
             );
         });
-        fieldSetElement.innerHtmlElements.push(new GridRowControl(rowCells));
+        fieldSetElement.innerHtmlElements.push(new GridRowControl(rowCells, false, jobParam['is_dangerous']));
     });
 
     return fieldSetElement;

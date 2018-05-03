@@ -80,7 +80,7 @@ class JobParameterDetailsView(generics.RetrieveUpdateDestroyAPIView):
     """This class handles the http GET, PUT and DELETE requests."""
     queryset = JobParameter.objects.all()
     serializer_class = JobParameterSerializer
-    
+
     def perform_update(self, serializer):
         serializer.save(job=Job.objects.get(pk=self.kwargs['job_id']))
 

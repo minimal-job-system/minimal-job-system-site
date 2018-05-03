@@ -48,15 +48,18 @@
                     $('#id_job_fieldset').html(jobFieldSet.getJQueryElement());
 
                     {% if job_parameter_form_set.forms|length > 0 %}
-                        paramTypes = new Map();
+                        var paramTypes = new Map();
                         {% for id, name in parameter_types %}
                             paramTypes.set({{ id }}, "{{ name }}");
                         {% endfor %}
 
-                        paramDescription = new Map();
+                        var paramMetadata = new Map();
                         for (idx = 0; idx < job_template.parameter_declarations.length; ++idx) {
                             paramDecl = job_template.parameter_declarations[idx];
-                            paramDescription.set(paramDecl.name, paramDecl.description);
+                            var metadata = new Map();
+                            metadata.set("description", paramDecl.description);
+                            metadata.set("is_dangerous", paramDecl.is_dangerous);
+                            paramMetadata.set(paramDecl.name, metadata);
                         }
 
                         jobParams = [];
@@ -68,7 +71,8 @@
                                 'name': '{{ job_param_form.name.value }}',
                                 'type': '{{ job_param_form.type.value }}',
                                 'value': '{{ job_param_form.value.value }}',
-                                'description': paramDescription.get('{{ job_param_form.name.value }}'),
+                                'description': paramMetadata.get('{{ job_param_form.name.value }}').get('description'),
+                                'is_dangerous': paramMetadata.get('{{ job_param_form.name.value }}').get('is_dangerous'),
                                 'errors': [{% for error in job_param_form.value.errors %}'{{ error }}',{% endfor %}]
                             });
                         {% endfor %}
@@ -133,6 +137,7 @@
                         'type': param_decl.type,
                         'value': param_decl.default,
                         'description': param_decl.description,
+                        'is_dangerous': param_decl.is_dangerous,
                         'errors': [{% for error in field.errors %}'{{ error }},'{% endfor %}]
                     });
                 }

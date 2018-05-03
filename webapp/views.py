@@ -24,7 +24,9 @@ def index(request):
 
 class JobListView(FilterView):
     model = Job
-    queryset = Job.objects.filter(date_created__gte=datetime.now()-timedelta(days=30))
+    queryset = Job.objects.filter(
+        date_created__gte=datetime.now()-timedelta(days=30)
+    )
     ordering = ["-date_created"]
     filter_fields = ('owner',)
 

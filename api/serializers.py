@@ -6,8 +6,8 @@ from webapp.models import JobTemplate, Job, JobParameterDeclaration, \
 
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
     """
-    A ModelSerializer that takes an additional `fields` and 'exclude' argument that
-    controls which fields should be displayed.
+    A ModelSerializer that takes an additional `fields` and 'exclude' argument
+    that controls which fields should be displayed.
     """
     def __init__(self, *args, **kwargs):
         fields = kwargs.pop('fields', None)
@@ -28,7 +28,9 @@ class JobParameterDeclarationSerializer(serializers.ModelSerializer):
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = JobParameterDeclaration
-        fields = ('id', 'name', 'description', 'type', 'default')
+        fields = (
+            'id', 'name', 'description', 'type', 'default', 'is_dangerous'
+        )
 
 
 class JobTemplateSerializer(serializers.ModelSerializer):
@@ -50,7 +52,7 @@ class JobTemplateSerializer(serializers.ModelSerializer):
 class JobLogEntrySerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
     date_created = serializers.DateTimeField(default=datetime.datetime.now())
-    
+
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = JobLogEntry

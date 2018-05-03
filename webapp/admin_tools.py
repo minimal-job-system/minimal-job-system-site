@@ -125,7 +125,7 @@ def sync_job_source(job_source):
             for class_node in workflow_class_nodes:
                 namespace = None
                 parameters = []
-                
+
                 child_nodes = list(ast.iter_child_nodes(class_node))
                 for idx, child_node in enumerate(child_nodes):
                     # search for luigi.Parameter assignments
@@ -174,7 +174,8 @@ def sync_job_source(job_source):
                             ):
                                 expr_node = child_nodes[idx+1]
                                 if isinstance(expr_node.value, ast.Str):
-                                    parameter["description"] = expr_node.value.s
+                                    parameter["description"] = \
+                                        expr_node.value.s
 
                 job_template = JobTemplate(
                     namespace=namespace,
@@ -193,7 +194,10 @@ def sync_job_source(job_source):
                             parameter["annotations"].get("default") or
                             parameter["default"]
                         ),
-                        style_class=parameter["annotations"].get("style_class")
+                        is_dangerous=(
+                            parameter["annotations"].get("is_dangerous") in
+                            ["true", "True"]
+                        )
                     ).save()
 
     return errors
@@ -209,7 +213,7 @@ def extract_parameter(assign_node, parameter_types):
     }
     parameter["name"] = assign_node.targets[0].id
 
-    rev_parameter_types = {v:k for k, v in dict(parameter_types).items()}
+    rev_parameter_types = {v: k for k, v in dict(parameter_types).items()}
     if assign_node.value.func.attr == "IntParameter":
         parameter["type"] = rev_parameter_types.get("Integer", None)
         parameter["default"] = ""
