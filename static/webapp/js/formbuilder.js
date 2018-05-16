@@ -124,7 +124,6 @@ function FormGroupControl(labelElement, formElement, helpMessage) {
         } else {
             formGroupControl.attr('class', 'form-group has-error');
         }
-        formGroupControl.attr('style', 'margin: 0px;');
 
         if (this.labelElement) {
             if (!("class" in this.labelElement.attributes)) {
@@ -174,7 +173,6 @@ function GridCellControl(htmlElement, widthWeight, isHidden) {
         if (this.isHidden) {
             gridCellControl.addClass('hidden');
         }
-        gridCellControl.attr('style', 'margin: 8px 0px;');
         if (this.htmlElement) {
             gridCellControl.append(this.htmlElement.getJQueryElement());
         }
@@ -185,16 +183,26 @@ GridCellControl.prototype = Object.create(  // simulate inheritance
     HtmlStructuralElement.prototype, {'constructor': GridCellControl}
 );
 
-function GridRowControl(gridCellControls, isHeader, isDangerous) {
+function GridRowControl(id, gridCellControls, isHeader, isHidden, isDangerous) {
+    this.id = id || null;
     this.gridCellControls = gridCellControls || [];
     this.isHeader = isHeader || false;
+    this.isHidden = isHidden || false;
     this.isDangerous = isDangerous || false;
 
     this.getJQueryElement = function() {
         var gridRowControl = $('<div/>');
         gridRowControl.attr('class', 'row');
+        if (this.id) {
+            gridRowControl.attr('id', id);
+        }
+        
         if (this.isHeader) {
-            gridRowControl.addClass('title');
+            gridRowControl.addClass('text-capitalize');
+            gridRowControl.attr('style', "font-weight: bold;");
+        }
+        if (this.isHidden) {
+            gridRowControl.addClass('hidden');
         }
         if (this.isDangerous) {
             gridRowControl.addClass('bg-danger');
@@ -222,7 +230,7 @@ function buildJobTemplateFieldSet(jobTemplates) {
         optionElements.push(new OptionElement({'value': jobTemplate.id, 'selected': jobTemplate.isSelected}, jobTemplate.name));
     });
     fieldSetElement.innerHtmlElements.push(
-        new GridRowControl([
+        new GridRowControl(null, [
             new GridCellControl(
                 new FormGroupControl(
                     new LabelElement({}, 'Please choose a job template:'),
@@ -262,14 +270,14 @@ function buildJobFieldSet(job) {
         rowHeaders.push(
             new GridCellControl(
                 new FormGroupControl(
-                    new LabelElement({'style': 'text-transform: capitalize;'}, modelField.name),
+                    new LabelElement({}, modelField.name),
                     null
                 ),
                 modelField.widthWeight, modelField.isHidden
             )
         );
     });
-    fieldSetElement.innerHtmlElements.push(new GridRowControl(rowHeaders));
+    fieldSetElement.innerHtmlElements.push(new GridRowControl('id_job_header_row', rowHeaders, true));
 
     var rowCells = [];
     $.each(modelFields, function(field_idx, modelField) {
@@ -308,7 +316,7 @@ function buildJobFieldSet(job) {
             )
         );
     });
-    fieldSetElement.innerHtmlElements.push(new GridRowControl(rowCells));
+    fieldSetElement.innerHtmlElements.push(new GridRowControl('id_job_body_row', rowCells));
 
     return fieldSetElement;
 }
@@ -346,14 +354,14 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
         rowHeaders.push(
             new GridCellControl(
                 new FormGroupControl(
-                    new LabelElement({'style': 'text-transform: capitalize;'}, modelField.name),
+                    new LabelElement({}, modelField.name),
                     null
                 ),
                 modelField.widthWeight, modelField.isHidden
             )
         );
     });
-    fieldSetElement.innerHtmlElements.push(new GridRowControl(rowHeaders));
+    fieldSetElement.innerHtmlElements.push(new GridRowControl('id_job_parameters_header_row', rowHeaders, true));
 
     $.each(jobParams, function(param_idx, jobParam) {
         var rowCells = [];
@@ -376,6 +384,27 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                             'style': 'width: auto; margin: 0px;',
                             'checked': jobParam[modelField.name].toLowerCase() == 'true'
                         }, null
+                    );
+                } else if (modelField.id == 'value-str' && (jobParam['choices'] || false) && (jobParam['choices'].length > 0)) {
+                    var optionElements = [];
+                    $.each(jobParam['choices'], function(choice_idx, choice) {
+                        optionElements.push(new OptionElement({'selected': choice.value == jobParam['value']}, choice.value));
+                        
+                    });
+                    
+                    formElement = new SelectElement(
+                        {
+                            'id': 'id_parameters-' + param_idx.toString() + '-' + modelField.id,
+                            'class': 'pull-left',
+                            'name': 'parameters-' + param_idx.toString() + '-' + modelField.id,
+                            'readonly': modelField.readonly,
+                            'onchange':
+                                (! modelField.isHidden) ?
+                                '$(\'#id_parameters-' + param_idx.toString() + '-' + modelField.name + '\').attr(\'value\', $(this).find(\':selected\').text());'
+                                :
+                                '',
+                            'style': 'width: auto; margin: 0px;'
+                        }, optionElements
                     );
                 } else {
                     formElement = new InputElement(
@@ -418,7 +447,9 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                 )
             );
         });
-        fieldSetElement.innerHtmlElements.push(new GridRowControl(rowCells, false, jobParam['is_dangerous']));
+        fieldSetElement.innerHtmlElements.push(
+            new GridRowControl('id_' + jobParam['name'] + '_row', rowCells, false, jobParam['is_hidden'], jobParam['is_dangerous'])
+        );
     });
 
     return fieldSetElement;
@@ -437,7 +468,7 @@ function buildJobRegisterForm(csrfToken, jobTemplates, jobs, jobParams) {
     formElement.innerHtmlElements.push(buildJobParamsFieldSet(jobParams));
 
     formElement.innerHtmlElements.push(
-        new GridRowControl([
+        new GridRowControl(null, [
             new GridCellControl(
                 new HtmlElement('hr'),
                 12, false

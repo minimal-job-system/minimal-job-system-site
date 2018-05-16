@@ -69,11 +69,32 @@ class JobParameterDeclaration(models.Model):
     description = models.CharField(max_length=255, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     default = models.CharField(max_length=255, blank=False)
-    is_dangerous = models.BooleanField(default=False)
+    # The following fields may contain dynamic expressions
+    # which are evaluated during runtime
+    is_hidden = models.CharField(max_length=255, blank=False, default="False")
+    is_dangerous = models.CharField(
+        max_length=255, blank=False, default="False"
+    )
 
     def __str__(self):
         """Return a human readable representation of the model instance."""
         return "Job Parameter Declaration: {}".format(self.name)
+
+
+class JobParameterDeclarationChoice(models.Model):
+    """This class represents a job parameter declaration choice."""
+    id = models.AutoField(primary_key=True)
+    param_declaration = models.ForeignKey(
+        'JobParameterDeclaration',
+        related_name='choices',
+        blank=True, null=True,
+        on_delete=models.CASCADE,
+    )
+    value = models.CharField(max_length=255, blank=False)
+
+    def __str__(self):
+        """Return a human readable representation of the model instance."""
+        return "Job Parameter Declaration Choice: {}".format(self.value)
 
 
 class Job(models.Model):

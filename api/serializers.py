@@ -1,7 +1,7 @@
 import datetime
 from rest_framework import serializers
 from webapp.models import JobTemplate, Job, JobParameterDeclaration, \
-    JobParameter, JobLogEntry
+    JobParameterDeclarationChoice, JobParameter, JobLogEntry
 
 
 class DynamicFieldsModelSerializer(serializers.ModelSerializer):
@@ -23,13 +23,26 @@ class DynamicFieldsModelSerializer(serializers.ModelSerializer):
                 self.fields.pop(exclude_name)
 
 
+class JobParameterDeclarationChoiceSerializer(serializers.ModelSerializer):
+    """Serializer to map the Model instance into JSON format."""
+    class Meta:
+        """Meta class to map serializer's fields with the model fields."""
+        model = JobParameterDeclarationChoice
+        fields = (
+            'id', 'value'
+        )
+
+
 class JobParameterDeclarationSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
+    choices = JobParameterDeclarationChoiceSerializer(many=True)
+    
     class Meta:
         """Meta class to map serializer's fields with the model fields."""
         model = JobParameterDeclaration
         fields = (
-            'id', 'name', 'description', 'type', 'default', 'is_dangerous'
+            'id', 'name', 'description', 'type', 'default',
+            'is_hidden', 'is_dangerous', 'choices'
         )
 
 

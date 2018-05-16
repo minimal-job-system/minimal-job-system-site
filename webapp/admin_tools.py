@@ -10,7 +10,8 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect
 
-from .models import JobSource, JobTemplate, JobParameterDeclaration
+from .models import JobSource, JobTemplate, JobParameterDeclaration, \
+    JobParameterDeclarationChoice
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -161,7 +162,12 @@ def sync_job_source(job_source):
                                         expr_node.value.keys,
                                         expr_node.value.values
                                     ):
-                                        parameter["annotations"][k.s] = v.s
+                                        if isinstance(v, ast.List):
+                                            parameter["annotations"][k.s] = [
+                                                item.s for item in v.elts
+                                            ]
+                                        else:
+                                            parameter["annotations"][k.s] = v.s
 
                             # search for docstrings
                             # Python does not treat strings defined IMMEDIATELY
@@ -185,7 +191,7 @@ def sync_job_source(job_source):
                 )
                 job_template.save()
                 for parameter in parameters:
-                    JobParameterDeclaration(
+                    job_param_decl = JobParameterDeclaration(
                         template=job_template,
                         name=parameter["name"],
                         description=parameter["description"],
@@ -194,11 +200,23 @@ def sync_job_source(job_source):
                             parameter["annotations"].get("default") or
                             parameter["default"]
                         ),
+                        is_hidden=(
+                            parameter["annotations"].get("is_hidden") or False
+                        ),
                         is_dangerous=(
-                            parameter["annotations"].get("is_dangerous") in
-                            ["true", "True"]
+                            parameter["annotations"].get("is_dangerous") or
+                            False
                         )
-                    ).save()
+                    )
+                    job_param_decl.save()
+                    
+                    param_choices = parameter["annotations"].get("choices")
+                    if param_choices:
+                        for param_choice in param_choices:
+                            JobParameterDeclarationChoice(
+                                param_declaration=job_param_decl,
+                                value=param_choice
+                            ).save()
 
     return errors
 
