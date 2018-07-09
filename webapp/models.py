@@ -66,7 +66,7 @@ class JobParameterDeclaration(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255, blank=False)
-    description = models.CharField(max_length=255, blank=False)
+    description = models.CharField(max_length=512, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     default = models.CharField(max_length=255, blank=False)
     # The following fields may contain dynamic expressions

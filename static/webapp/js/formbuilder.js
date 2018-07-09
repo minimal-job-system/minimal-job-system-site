@@ -403,7 +403,7 @@ function buildJobParamsFieldSet(jobParams, initForms=0, minNumForms=0, maxNumFor
                                 '$(\'#id_parameters-' + param_idx.toString() + '-' + modelField.name + '\').attr(\'value\', $(this).find(\':selected\').text());'
                                 :
                                 '',
-                            'style': 'width: auto; margin: 0px;'
+                            'style': 'width: 100%; margin: 0px;'
                         }, optionElements
                     );
                 } else {

@@ -209,7 +209,7 @@ def sync_job_source(job_source):
                         )
                     )
                     job_param_decl.save()
-                    
+
                     param_choices = parameter["annotations"].get("choices")
                     if param_choices:
                         for param_choice in param_choices:
@@ -244,7 +244,9 @@ def extract_parameter(assign_node, parameter_types):
     if assign_node.value.func.attr == "DateSecondParameter":
         parameter["type"] = rev_parameter_types.get("Datetime", None)
         parameter["default"] = ""
-    if assign_node.value.func.attr == "Parameter":
+    if assign_node.value.func.attr in [
+        "Parameter", "ChoiceParameter", "TaskParameter", "DictParameter"
+    ]:
         parameter["type"] = rev_parameter_types.get("String", None)
         parameter["default"] = ""
 
