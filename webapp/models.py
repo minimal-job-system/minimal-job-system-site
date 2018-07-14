@@ -189,7 +189,7 @@ class JobLogEntry(models.Model):
         on_delete=models.CASCADE,
     )
     level = models.IntegerField(choices=LOG_LEVEL_CHOICES, blank=False)
-    message = models.CharField(max_length=255, blank=False)
+    message = models.CharField(max_length=512, blank=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
