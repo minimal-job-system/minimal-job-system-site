@@ -66,7 +66,7 @@ class JobParameterDeclaration(models.Model):
         on_delete=models.CASCADE,
     )
     name = models.CharField(max_length=255, blank=False)
-    description = models.CharField(max_length=512, blank=False)
+    description = models.CharField(max_length=1024, blank=False)
     type = models.IntegerField(choices=PARAMETER_TYPE_CHOICES, blank=False)
     default = models.CharField(max_length=255, blank=False)
     # The following fields may contain dynamic expressions
@@ -106,7 +106,7 @@ class Job(models.Model):
     status = models.CharField(max_length=255, blank=False)
     progress = models.FloatField(
         blank=False, default=0,
-        validators=[MinValueValidator(0), MaxValueValidator(100)]
+        #validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
     owner = models.CharField(max_length=255, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
