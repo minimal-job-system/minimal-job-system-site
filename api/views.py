@@ -3,7 +3,7 @@ from django_filters import rest_framework as filters
 from django.db.models import Q
 from rest_framework import generics
 from .serializers import JobTemplateSerializer, JobSerializer, \
-    JobParameterSerializer, JobLogEntrySerializer
+    JobDetailsSerializer, JobParameterSerializer, JobLogEntrySerializer
 
 from webapp.models import JobTemplate, Job, JobParameter, JobLogEntry
 from webapp.models import JOB_TYPE_CHOICES
@@ -72,7 +72,7 @@ class JobListView(generics.ListCreateAPIView):
 class JobDetailsView(generics.RetrieveUpdateDestroyAPIView):
     """This class handles the http GET, PUT and DELETE requests."""
     queryset = Job.objects.all()
-    serializer_class = JobSerializer
+    serializer_class = JobDetailsSerializer
 
 
 class JobParameterListView(generics.ListCreateAPIView):

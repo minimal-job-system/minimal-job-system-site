@@ -83,6 +83,20 @@ class JobParameterSerializer(serializers.ModelSerializer):
 class JobSerializer(serializers.ModelSerializer):
     """Serializer to map the Model instance into JSON format."""
     parameters = JobParameterSerializer(many=True, read_only=True)
+
+    class Meta:
+        """Meta class to map serializer's fields with the model fields."""
+        model = Job
+        fields = (
+            'id', 'namespace', 'name', 'type', 'status', 'progress', 'owner',
+            'date_created', 'date_modified', 'parameters'
+        )
+        read_only_fields = ('date_created', 'date_modified')
+
+
+class JobDetailsSerializer(serializers.ModelSerializer):
+    """Serializer to map the Model instance into JSON format."""
+    parameters = JobParameterSerializer(many=True, read_only=True)
     log_entries = JobLogEntrySerializer(many=True, read_only=True)
 
     class Meta:
