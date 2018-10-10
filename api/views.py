@@ -1,4 +1,6 @@
+from datetime import datetime, timedelta
 from django_filters import rest_framework as filters
+from django.db.models import Q
 from rest_framework import generics
 from .serializers import JobTemplateSerializer, JobSerializer, \
     JobParameterSerializer, JobLogEntrySerializer
@@ -23,14 +25,15 @@ class JobTemplateDetailsView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = JobTemplateSerializer
 
 
-class JobTypeFilter(filters.FilterSet):
+class JobFilter(filters.FilterSet):
     type_name = filters.CharFilter(label="Type Name", method="filter_type")
+    is_archived = filters.BooleanFilter(label="Is Archived", method="filter_archived")
 
     class Meta:
         model = Job
         fields = [
             'id', 'namespace', 'name', 'type_name', 'type', 'status',
-            'progress', 'owner'
+            'progress', 'owner', 'date_created'
         ]
 
     def filter_type(self, queryset, name, value):
@@ -41,6 +44,16 @@ class JobTypeFilter(filters.FilterSet):
         return queryset.filter(
             type=type[0] if len(type) == 1 else -1
         )
+    
+    def filter_archived(self, queryset, name, value):
+        if value == True:
+            return queryset.filter(
+                ~Q(status='in progress') & Q(date_modified__date__lt=datetime.now()-timedelta(days=7))
+            )
+        else:
+            return queryset.filter(
+                Q(status='in progress') | Q(date_modified__date__gte=datetime.now()-timedelta(days=7))
+            )
 
 
 class JobListView(generics.ListCreateAPIView):
@@ -48,8 +61,8 @@ class JobListView(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = JobTypeFilter
-    filter_fields = ('type',)
+    filter_class = JobFilter
+    filter_fields = ('type', 'status', 'date_created')
 
     def perform_create(self, serializer):
         """Save the post data when creating a new job."""
