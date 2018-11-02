@@ -16,6 +16,7 @@ Including another URLconf
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
+from django.http import HttpResponseRedirect
 
 
 urlpatterns = [
@@ -23,6 +24,7 @@ urlpatterns = [
     url(r'^login/', auth_views.login,{'template_name': 'core/login.html'}, name='login'),
     url(r'^logout/', auth_views.logout, {'template_name': 'core/logout.html', 'next_page': '/login'}, name='logout'),
     # url(r'^admin/', ExtendedAdminSite.get_urls),
+    url(r'^$', lambda r: HttpResponseRedirect('frontend/')),
     url(r'^api/', include('job_system_api.urls')),
-    url(r'^app/', include('job_system_app.urls'))
+    url(r'^frontend/', include('job_system_frontend.urls'))
 ]
