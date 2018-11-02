@@ -40,12 +40,14 @@ DJANGO_APPS = (
 
 THIRD_PARTY_APPS = (
     'django_filters',
-    'rest_framework'
+    'rest_framework',
+    'constance',
+    'constance.backends.database'
 )
 
 LOCAL_APPS = (
     'job_system_api',
-    'job_system_app'
+    'job_system_frontend'
 )
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -120,6 +122,20 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Dynamic Settings
+# https://django-constance.readthedocs.io/en/latest/
+
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+
+CONSTANCE_CONFIG = {
+    'JOB_SYSTEM_TITLE': (
+        'Minimal Job System', 'Title of the Job System application'
+    ),
+    'JOB_SYSTEM_ICON': (
+        'job_system_app/img/default.ico', 'Icon of the Job System application'
+    )
+}
 
 
 # Internationalization
