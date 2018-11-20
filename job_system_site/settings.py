@@ -133,7 +133,7 @@ CONSTANCE_CONFIG = {
         'Minimal Job System', 'Title of the Job System application'
     ),
     'JOB_SYSTEM_ICON': (
-        'job_system_app/img/default.ico', 'Icon of the Job System application'
+        'job_system_frontend/img/default.ico', 'Icon of the Job System application'
     )
 }
 
