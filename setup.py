@@ -37,11 +37,11 @@ setup(
     ],
     scripts=['manage.py'],
     install_requires=[
-        'django>=2.0.13',
+        'django==2.0.13',
         'django-filter==2.1.0',
         'djangorestframework==3.7.7',
         'django-constance[database]==2.3.1',
-        'psycopg2-binary==2.7.5',
+        'psycopg2-binary>=2.7.5',
         'django-minimal-job-system-api==0.0.4',
         'django-minimal-job-system-frontend==0.0.4'
     ]
